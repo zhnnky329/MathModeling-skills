@@ -165,7 +165,7 @@ Minimum 7 files per subquestion before "Ready for Writer":
 - results/Qx/reports/qx_solution_package_for_writer.md
 - results/Qx/reports/frozen_numbers.json (immutable freeze)
 
-# Full Skill List (26 skills)
+# Full Skill List (27 skills)
 
 | Skill | Role |
 |-------|------|
@@ -173,7 +173,8 @@ Minimum 7 files per subquestion before "Ready for Writer":
 | problem-parser | 题目解析：拆成目标/对象/约束/数据/输出/子问题 |
 | problem-classifier | 题型分类：评价/预测/优化/机理/分类/图/仿真/混合 |
 | related-paper-analyzer | 论文分析：从真实文献提炼方法，不编造引用 |
-| method-selector | 候选方法池：每小问 2-4 个候选 + 每个候选附 ≤30 行 PoC + 可行性数字 |
+| method-selector | 候选方法池：每小问 2-4 个候选 + 每个候选附 ≤30 行 PoC + 可行性数字；只发 `[CANDIDATE]` 不发 `[CHOSEN]`，方法选择交人(G2.5) |
+| **modeler-decision-logger** | **决策版 frozen_numbers：收集/盖戳/冻结人写决策成单一 append-only 日志；论文叙述从它转述，赛后当复盘日记。不产决策。** |
 | symbol-table-builder | 全局符号表构建：统一所有小问的符号约定 |
 | model-assumptions-builder | 全局模型假设：区分必要/简化，评估影响 |
 | data-auditor-cleaner | 数据审计清洗：副本操作，不碰原始数据 |
