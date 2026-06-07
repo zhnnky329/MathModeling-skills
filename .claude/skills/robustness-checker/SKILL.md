@@ -8,7 +8,9 @@ license: MIT
 
 Design and run robustness, sensitivity, error, and baseline comparison checks for mathematical modeling contest solutions.
 
-This skill tests whether model conclusions are stable enough to support paper claims. It compares baseline and main model results, perturbs key parameters or inputs, checks error behavior, identifies fragile assumptions, and records the boundary conditions under which conclusions remain valid.
+This skill runs the perturbation, sensitivity, error, and baseline computations that test whether model conclusions are stable enough to support paper claims. It compares baseline and main model results, perturbs key parameters or inputs, checks error behavior, identifies fragile assumptions, and records the boundary conditions under which conclusions remain valid.
+
+The computation is AI-owned: running perturbations, computing deltas, comparing against the baseline, and producing the ≥ 5 pass-item report are this skill's job. The **stability verdict itself — "is the model robust enough" and "how confident are we" — is NOT.** That is a modeling judgment the human makes at the gate. This skill lays out the computed evidence plus an explicit `ai_suggestion` reading of it, then emits a PENDING decision artifact and STOPS. It never renders a graded stability verdict on its own.
 
 A key output is the per-subquestion robustness report (`robustness/Qx/qx_robustness_report.md`), which serves the paper materials chain: the report's findings are referenced by the final result analysis, incorporated into the solution package, and ultimately written into the paper's robustness section.
 
@@ -92,11 +94,11 @@ Use or request:
    - If execution is not possible, produce an executable robustness plan and mark it as not yet run.
    - Do not invent numerical robustness results.
 
-6. Summarize stability.
-   - Separate stable findings from fragile findings.
-   - State which conclusions are supported.
-   - State which conclusions require caution.
-   - State the boundary conditions under which conclusions are valid.
+6. Summarize the computed evidence (facts), and offer a reading (suggestion) — do NOT render a verdict.
+   - The computed numbers stay AI-owned facts: perturbation deltas, baseline comparison values, error metrics, ranking changes, variance under seeds.
+   - You MAY group findings into a *suggested* stable/fragile split and state which conclusions you read as supported vs. requiring caution — but label this as your **`ai_suggestion`**, not a graded verdict.
+   - State the boundary conditions under which conclusions appear valid, as evidence the human will weigh.
+   - Do NOT auto-render an overall `Status: passed / needs_caution`. The overall stability verdict and the confidence level are decided by the human in step 8.5, not here.
 
 7. Determine figure placement.
    - For each robustness figure, recommend: main paper (Type 3 论文图) or appendix (Type 4 附录图).
@@ -106,8 +108,20 @@ Use or request:
    - Save to `robustness/Qx/qx_robustness_report.md`.
    - Keep the report self-contained and citable from the final result analysis and solution package.
 
+8.5. Emit the modeler decision artifact, then STOP (Gate G4.5).
+   - This is the load-bearing change: whether the model is "robust enough" — and how confident we are in its stability — is a graded modeling judgment. The AI must not make it. You ran the perturbations and computed the deltas; the human reads them and commits the verdict.
+   - Create `methods/Qx/decisions/robustness-checker_modeler_decision.md` following the **Human Decision Artifact Convention** in CLAUDE.md, with:
+     - `schema_version`, `skill: robustness-checker`, `scope: Qx`, `decision_id: qx_stability_verdict`, `decision_point: confidence`.
+     - `status: PENDING`, `decided_by: human` (left for the human to confirm), `decided_at` left blank.
+     - `ai_suggestion`: your reading of the perturbation / sensitivity / baseline results — your single best stability verdict (`high` / `medium` / `needs_caution`) plus the one number that drives it. This is YOUR view, in its own field — it does not count as the decision. The computed numbers themselves (perturbation deltas, baseline comparison) stay AI-owned facts in the report, not in this field.
+     - `choice` (the human's `confidence` ∈ {`high`, `medium`, `needs_caution`}), every `rejected_alternatives[*].reason`, and the `## Modeler's rationale` body left as `<<<HUMAN>>>` sentinels for the modeler to fill. The human rationale MUST cite at least one specific number from the robustness report (e.g. a perturbation delta, a baseline improvement, an error metric) — you cannot trust stability without naming the perturbation result that justifies it. This evidence-citation is the strong lever.
+     - `evidence_refs`: point at the real computed numbers under `robustness/Qx/` — the report, the perturbation/sensitivity/baseline CSVs and figures — so the human's rationale resolves to concrete numbers.
+   - Then STOP and tell the modeler exactly what to fill in. Do NOT proceed to `figure-table-planner` or hand the verdict downstream. Gate G4.5 (part of the results→freeze human layer) keeps the stability verdict from flowing into the solution package / freeze until this artifact's `status` is `DECIDED` with a non-empty, non-copied human rationale that cites a report number.
+   - In **learning mode** (if `planning/session_config.json` says so): withhold `ai_suggestion` until after the human writes their rationale, to avoid anchoring. In **speed mode**: show `ai_suggestion` alongside. Either way the human rationale field, its char floor, and the copy/evidence checks are identical.
+   - `modeler-decision-logger` collects this artifact into `methods/Qx/qx_decision_log.md` (append-only).
+
 9. Recommend next step.
-   - If robustness evidence is sufficient, hand off to `figure-table-planner`.
+   - If robustness evidence is sufficient AND the human has committed the stability verdict (decision artifact `status: DECIDED`), hand off to `figure-table-planner`.
    - If model or code issues are discovered, hand back to the relevant upstream skill.
 
 # Outputs
@@ -130,9 +144,10 @@ Each `robustness/Qx/qx_robustness_report.md` must follow this structure:
 
 ## 1. Summary
 
-- **Status**: passed / passed_with_warnings / needs_caution / failed
-- **Overall finding**: [one-sentence summary of stability]
-- **Recommended next skill**: `figure-table-planner`
+- **Computed evidence (AI-owned facts)**: [one-sentence factual summary of what the perturbations / baseline comparison produced — the numbers, not a verdict]
+- **AI-suggested stability reading** (`ai_suggestion`, NOT a verdict): high / medium / needs_caution — [the one number that drives this reading]
+- **Verdict status**: PENDING — decided by the human in `methods/Qx/decisions/robustness-checker_modeler_decision.md` (Gate G4.5). This skill does NOT render the stability verdict.
+- **Recommended next skill** (after the human decides): `figure-table-planner`
 
 ## 2. Claims Under Test
 
@@ -153,9 +168,10 @@ Each `robustness/Qx/qx_robustness_report.md` must follow this structure:
 |--------|----------|------------|-------------|-------------|
 | [metric] | [value] | [value] | [delta] | yes / no / marginal |
 
-### 3.3 Baseline Comparison Verdict
-- [Whether the main model meaningfully improves over baseline]
-- [If not, honest assessment of why the main model is still chosen]
+### 3.3 Baseline Comparison Reading (`ai_suggestion`, NOT a verdict)
+- The comparison **numbers** above (baseline value, main-model value, delta) are AI-owned facts.
+- Whether the improvement is "meaningful enough" is the AI's *suggested reading* — label it as such. The human commits whether this counts as a meaningful improvement in the decision artifact.
+- [If the AI reads the main model as not improving, honest factual statement of the gap]
 
 ## 4. Robustness Checks
 
@@ -215,13 +231,17 @@ For each major conclusion, state the conditions under which it remains valid:
 - `robustness/Qx/qx_robustness_report.md`
 - `robustness/Qx/weight_sensitivity.csv`
 - `robustness/Qx/figures/weight_sensitivity.png`
+- `methods/Qx/decisions/robustness-checker_modeler_decision.md` (PENDING — the human commits the stability verdict here at Gate G4.5)
 
 ## 11. Handoff
 
-- **Next skill**: `figure-table-planner`
-- **Supported conclusions** (for solution package): [list]
-- **Fragile conclusions** (for solution package): [list]
+- **Stability verdict**: PENDING — awaiting the human in `methods/Qx/decisions/robustness-checker_modeler_decision.md` (Gate G4.5).
+- **Next skill** (after the human decides): `figure-table-planner`
+- **AI-suggested supported conclusions** (`ai_suggestion`, for the human to weigh): [list]
+- **AI-suggested fragile conclusions** (`ai_suggestion`, for the human to weigh): [list]
 ```
+
+Plus, separately, the decision artifact `methods/Qx/decisions/robustness-checker_modeler_decision.md` (PENDING, awaiting the human) — see workflow step 8.5.
 
 # Robustness check types
 
@@ -310,6 +330,8 @@ Check for ALL models:
 
 # Rules
 
+- **The human decides the stability verdict at the gate — this skill never assigns it.** Run the perturbations, compute the deltas, compare against baseline, and produce the ≥ 5 pass-item report (all AI-owned). But do NOT auto-render an overall `Status: passed / needs_caution`, and do NOT declare the model "robust enough" or split conclusions into a graded stable/fragile verdict on your own. Emit a PENDING decision artifact (`decision_id: qx_stability_verdict`) and STOP. The human commits `confidence ∈ {high, medium, needs_caution}` at Gate G4.5.
+- **Never fill the human rationale field.** Leave `choice`, `rejected_alternatives[*].reason`, and the `## Modeler's rationale` body as `<<<HUMAN>>>` sentinels. Your reading goes ONLY in the `ai_suggestion` field. The human's rationale must cite at least one specific number from the robustness report — do not pre-write or copy it.
 - Robustness checks must target claims, not random variables.
 - Every major paper claim should have at least one supporting check or a stated limitation.
 - Do not invent robustness results.
@@ -334,6 +356,11 @@ Check for ALL models:
 
 Before handing off, verify:
 
+- **The stability verdict was NOT originated by this skill.** No auto-rendered overall `Status` verdict; the report's overall stability reading is labeled `ai_suggestion`, not a graded verdict.
+- **The decision artifact `methods/Qx/decisions/robustness-checker_modeler_decision.md` exists** with `status: PENDING`, `decision_id: qx_stability_verdict`, `decided_by: human`, `ai_suggestion` filled (in its own field), and `choice` / `rejected_alternatives[*].reason` / `## Modeler's rationale` left as `<<<HUMAN>>>` for the modeler.
+- **`evidence_refs` resolve to real computed files under `robustness/Qx/`** so the human's rationale can cite a concrete number.
+- **The human rationale field was left for the human** — this skill did not write or copy it; the AI's reading lives only in `ai_suggestion`.
+- Gate G4.5 is respected: the stability verdict does not flow into the solution package / freeze until the human sets `status: DECIDED`.
 - Per-subquestion robustness report exists for every subquestion that has a final method.
 - Baseline comparison exists where applicable.
 - Major conclusions have supporting checks or stated limitations.
@@ -345,7 +372,7 @@ Before handing off, verify:
 - Conclusion boundaries are stated.
 - Figure placement recommendations (main paper vs appendix) are provided.
 - Remaining risks are listed.
-- The next skill is `figure-table-planner`.
+- The next skill is `figure-table-planner` — but only after the human commits the stability verdict (decision artifact `status: DECIDED`).
 
 # Failure modes
 
@@ -427,19 +454,20 @@ Output (`robustness/Q1/q1_robustness_report.md` excerpt):
 # Q1 Robustness and Sensitivity Report
 
 ## 1. Summary
-- **Status**: passed_with_warnings
-- **Overall finding**: Top-3 ranking is stable under moderate (±10%) weight perturbation. Middle-ranked alternatives (ranks 4-7) show some sensitivity.
-- **Recommended next skill**: `figure-table-planner`
+- **Computed evidence (AI-owned facts)**: Top-3 ranking unchanged under ±10% weight perturbation; ranks 4-7 swap in 3 of 20 perturbation runs.
+- **AI-suggested stability reading** (`ai_suggestion`, NOT a verdict): medium — driven by the rank-4-7 instability (3/20 runs) against a fully stable top-3.
+- **Verdict status**: PENDING — decided by the human in `methods/Q1/decisions/robustness-checker_modeler_decision.md` (Gate G4.5). This skill does NOT render the stability verdict.
+- **Recommended next skill** (after the human decides): `figure-table-planner`
 
 ## 3. Baseline Comparison
 
-| Metric | M1 Equal-Weight | M2 Entropy-TOPSIS | Improvement | Meaningful? |
-|--------|----------------|-------------------|-------------|-------------|
+| Metric | M1 Equal-Weight | M2 Entropy-TOPSIS | Improvement | Meaningful? (AI reading) |
+|--------|----------------|-------------------|-------------|--------------------------|
 | Top-3 consistency | N/A (reference) | Same top 3 as M1 | — | M2 confirms M1's top picks |
-| Score differentiation (std) | 0.08 | 0.15 | +88% | Yes — M2 differentiates better |
+| Score differentiation (std) | 0.08 | 0.15 | +88% | AI reads as meaningful — human decides |
 
-### 3.3 Baseline Comparison Verdict
-M2 improves score differentiation over M1 while maintaining the same top-3 ranking, confirming that equal-weight ranking was reasonable but M2 adds useful discrimination for middle ranks.
+### 3.3 Baseline Comparison Reading (`ai_suggestion`, NOT a verdict)
+The numbers above are AI-owned facts: M2 raises score-differentiation std from 0.08 to 0.15 (+88%) while holding the same top-3. The AI *reads* this as a meaningful improvement that adds discrimination for middle ranks; whether it counts as meaningful enough is committed by the human in the decision artifact.
 
 ## 6. Fragile Conclusions
 
@@ -459,12 +487,13 @@ M2 improves score differentiation over M1 while maintaining the same top-3 ranki
 
 ```markdown
 ## 1. Summary
-- **Status**: needs_caution
-- **Overall finding**: Short-term predictions (1-3 months) show meaningful improvement over baseline. Long-term predictions (6+ months) become unstable.
+- **Computed evidence (AI-owned facts)**: ARIMA cuts 1-3 month RMSE by 35% vs. moving-average baseline; 12-month forecast error grows ~4x over the 3-month error.
+- **AI-suggested stability reading** (`ai_suggestion`, NOT a verdict): needs_caution — driven by the ~4x long-horizon error growth, despite the strong 35% short-term gain.
+- **Verdict status**: PENDING — decided by the human in `methods/Q2/decisions/robustness-checker_modeler_decision.md` (Gate G4.5). This skill does NOT render the stability verdict.
 
-## 5. Supported Conclusions
-| Conclusion | Supporting Check | Confidence |
-|-----------|-----------------|------------|
+## 5. AI-Suggested Supported Conclusions (`ai_suggestion`, for the human to weigh)
+| Conclusion | Supporting Check | AI confidence reading |
+|-----------|-----------------|-----------------------|
 | "ARIMA improves short-term RMSE by 35% over moving average baseline." | Error analysis (1-3 month horizon) | High |
 
 ## 6. Fragile Conclusions

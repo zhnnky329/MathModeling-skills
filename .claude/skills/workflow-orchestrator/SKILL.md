@@ -149,15 +149,26 @@ PoC proves a method is *feasible*; it does not prove it is the *right* choice. "
   - Scripts produced `results/Qx/experiments/roundN/` with `run_summary.json` and at least one figures/tables/metrics file.
 - **fail_fallback**: Route to `<lang>-code-reviewer`. If the review is insufficient (< 5 pass items), route back to the same reviewer with `completeness-auditor`'s gap report attached.
 
+## Gate G4.5: RESULTS_JUDGED_BY_HUMAN  (NEW — human-decision gate at the experiments→freeze boundary)
+The result verdict (`[CHOSEN]/[REJECTED]`, "is the result good", confidence) and the stability verdict are graded modeling judgments. Freezing them makes an AI judgment permanently canonical — so the human verdict must land BEFORE the freeze, not after. This is the second human-decision gate (the second `★`); its mechanical layer is G3 + the experiment loop above.
+- **enter_condition**: G3 passed; `results/Qx/experiments/roundN/` reports exist with per-method evidence; experiment-report verdict tags are `[PENDING-MODELER]` (the AI may annotate `[AI-SUGGESTED]`, visibly non-binding).
+- **pass_criteria** (all checked mechanically against the decision artifacts / decision log):
+  - `methods/Qx/decisions/result-report-generator_modeler_decision.md` is `DECIDED` (`decision_id: qx_result_verdict`): per-method `choice ∈ {CHOSEN,BACKUP,REJECTED}` + rationale tied to a criterion; `round_decision ∈ {proceed,iterate,return}`; `confidence` per top-line claim with a rationale that **cites a specific computed number**.
+  - `methods/Qx/decisions/robustness-checker_modeler_decision.md` is `DECIDED` (`decision_id: qx_stability_verdict`): stability `confidence` + rationale **citing a number from the robustness report**.
+  - `methods/Qx/decisions/final-method-explainer_modeler_decision.md` is `DECIDED` (`decision_id: qx_method_explanation`): per-assumption necessity ∈ {necessary,simplifying}; the why-this-method narrative is transcribed from the decision log, not re-authored.
+  - Each artifact passes the standard human-layer checks (DECIDED + decided_by:human + over floor + no sentinel + not a near-verbatim copy of `ai_suggestion` + evidence-citation).
+- **fail_fallback**: keep `freeze_allowed_Qx = false`; `solution-package-builder` refuses to emit `frozen_numbers.json`. `[REJECTED]` archival fires **only** for human-tagged rejections, never an AI label. Route back to the modeler (not a skill) with the missing/under-floor field. The orchestrator must never fill these artifacts or infer a verdict from an `ai_suggestion`.
+- **encoding**: `freeze_allowed_Qx = G3_mechanical_pass ∧ G4.5_human_pass`. The freeze (G4 below) cannot fire until both are true.
+
 ## Gate G4: RESULTS_FROZEN  (load-bearing — second-most-violated boundary)
-This is the results→paper boundary. Most "论文里数字与最新 results 错位" issues happen because G4 was treated as soft.
-- **enter_condition**: G3 passed; modeler confirmed final method; `results/Qx/reports/qx_final_result_analysis.md` exists.
+This is the results→paper boundary. Most "论文里数字与最新 results 错位" issues happen because G4 was treated as soft. **G4 now requires G4.5 to have passed** (the human verdicts must exist before the freeze) plus the package sign-off.
+- **enter_condition**: G4.5 passed (`freeze_allowed_Qx = true`); `results/Qx/reports/qx_final_result_analysis.md` exists.
 - **pass_criteria**:
+  - `methods/Qx/decisions/solution-package-builder_modeler_decision.md` is `DECIDED` (`decision_id: qx_package_signoff`): per-flagged-claim `approve ∈ {keep,downgrade,drop}` + package confidence confirmed/overridden by the human.
   - `results/Qx/reports/frozen_numbers.json` exists with a `frozen_at` timestamp.
   - `frozen_numbers.json` is newer than the last modification time of every `code/Qx/` file it references (no stale freeze).
-  - `results/Qx/reports/qx_solution_package_for_writer.md` exists.
-  - Every numerical claim in the solution package is sourced from `frozen_numbers.json`.
-- **fail_fallback**: Route to `solution-package-builder` to (re-)freeze. After freeze, if `consistency-auditor` later detects drift, route to the **解冻 → 修改 → 重冻结** three-step:
+  - `results/Qx/reports/qx_solution_package_for_writer.md` exists; every numerical claim in it is sourced from `frozen_numbers.json`; every "why we chose X" sentence traces to a `decision_id` in `methods/Qx/qx_decision_log.md`.
+- **fail_fallback**: If the package sign-off is missing/PENDING, build the human-readable package but DO NOT emit `frozen_numbers.json` — route back to the modeler for sign-off. After freeze, if `consistency-auditor` later detects drift, route to the **解冻 → 修改 → 重冻结** three-step:
   1. Modeler/programmer confirms which value is now canonical.
   2. Update the canonical source (code or analysis report).
   3. Re-run `solution-package-builder` to re-freeze. Do not edit `frozen_numbers.json` by hand.
@@ -182,14 +193,14 @@ This is the independent-audit gate. No single skill's "完成" claim can bypass 
 ## Gate dependency graph
 
 ```
-G1 → G2 → G2.5★ → G3 → G4 → G5 → G6 → final assembly
-          (human)                    ↑
-                                     consistency-auditor ┐
-                                     completeness-auditor├─ all must PASS
-                                     quality-assurance-auditor ┘
+G1 → G2 → G2.5★ → G3 → [experiments] → G4.5★ → G4 → G5 → G6 → final assembly
+          (human)                       (human)            ↑
+                                                           consistency-auditor ┐
+                                                           completeness-auditor├─ all must PASS
+                                                           quality-assurance-auditor ┘
 ```
 
-★ = human-decision gate. G2.5 is the first of these (pilot). It blocks `code_generation_allowed_Qx` until the modeler commits the method choice. The mechanical gates (G1–G6) stay AI-owned; the human gate adds a separate file-existence-and-content check, enforced the same way as `≥5-pass-item` checks.
+★ = human-decision gate. Two of them sit at the two load-bearing boundaries: **G2.5** (method→code) blocks `code_generation_allowed_Qx` until the modeler commits the method choice; **G4.5** (experiments→freeze) blocks `freeze_allowed_Qx` until the modeler renders the result + stability verdicts — so the freeze never fossilizes an AI judgment. The mechanical gates (G1–G6) stay AI-owned; each human gate adds a separate file-existence-and-content check, enforced the same way as `≥5-pass-item` checks.
 
 **The orchestrator never sets a human-gate pass itself.** It never fills a decision artifact, never infers a human verdict from an AI suggestion, and treats a missing/PENDING/under-floor decision artifact exactly like a missing mechanical artifact: the downstream `*_allowed` flag stays false.
 

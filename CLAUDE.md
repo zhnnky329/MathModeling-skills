@@ -25,7 +25,8 @@ Gates are not stages. A stage is "where I am"; a gate is "what I must satisfy to
 - **G2 METHOD_VALIDATED** (load-bearing — method→code boundary): each candidate has a ≤30-line PoC + feasibility number. No PoC ⇒ not validated.
 - **G2.5 METHOD_CHOSEN_BY_HUMAN** (human-decision gate, pilot): `methods/Qx/decisions/method-selector_modeler_decision.md` is `DECIDED` by the human with a non-empty, non-copied, evidence-citing rationale. The AI suggests; the human chooses. `code_generation_allowed_Qx = G2 ∧ G2.5`.
 - **G3 CODE_REVIEWED**: reviewer artifact exists at `code/Qx/reviews/qx_<lang>_review.md` with ≥ 5 explicit pass items.
-- **G4 RESULTS_FROZEN** (load-bearing — results→paper boundary): `results/Qx/reports/frozen_numbers.json` exists and is newer than every source file; solution package sources all numbers from it.
+- **G4.5 RESULTS_JUDGED_BY_HUMAN** (human-decision gate): before the freeze, the human renders the result verdict (`result-report-generator` → `qx_result_verdict`: per-method CHOSEN/BACKUP/REJECTED + round decision + confidence citing a number) and the stability verdict (`robustness-checker` → `qx_stability_verdict`, citing a number). `[REJECTED]` archival fires only off a human tag. `freeze_allowed_Qx = G3 ∧ G4.5`.
+- **G4 RESULTS_FROZEN** (load-bearing — results→paper boundary): requires G4.5 passed + package sign-off (`solution-package-builder` → `qx_package_signoff`: keep/downgrade/drop per flagged claim). `frozen_numbers.json` exists, is newer than every source file, and every "why we chose X" sentence traces to a `decision_id` in the decision log.
 - **G5 PAPER_SECTION_READY**: section meets word-count floor; every numerical result has ≥ 3 discussion dimensions; every figure passes render-check.
 - **G6 AUDIT_LAYER_PASSED**: all three independent audits PASSED (see "Independent Audit Layer" below).
 

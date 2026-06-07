@@ -18,6 +18,8 @@ Into one structured package that the paper writer can read and directly translat
 
 This skill does not write the actual paper sections, select models, run experiments, generate figures, or perform QA.
 
+**This skill does NOT originate the graded sign-off verdict.** The package's top-line confidence level and the scope of each top-line claim (which claims survive, which are downgraded, which are dropped) are the single most graded packaging judgments — they get frozen into `frozen_numbers.json` and propagate verbatim into the paper. The AI may FLAG candidate overclaims and SUGGEST a confidence level, both explicitly labeled as `ai_suggestion`. It must NOT decide `keep/downgrade/drop` for any claim, and it must NOT assign the package's confidence verdict. Those are the human's to render at the gate (see Workflow step 7.4 / Gate G4.5 package sign-off). The method-selection narrative in the package is TRANSCRIBED from the decision log with `decision_id` provenance — it is never re-authored here.
+
 # When to use
 
 Use this skill:
@@ -36,6 +38,13 @@ The following three files MUST exist before this skill can produce a complete pa
 1. `methods/Qx/qx_final_method_explanation.md` — the modeler's definitive method document.
 2. `results/Qx/reports/qx_final_result_analysis.md` — the programmer's definitive result document.
 3. The actual figure and table files referenced in the result analysis (must exist on disk, not just be planned).
+
+Additionally, the freeze (`frozen_numbers.json`, Gate G4) is gated on human sign-off — it MUST NOT be emitted until BOTH:
+
+4. The G4.5 result/stability verdicts are `DECIDED` in the decision log (`methods/Qx/qx_decision_log.md` carries `DECIDED` records for the `result_verdict` / `confidence` decision points from `result-report-generator`, and the stability verdict from `robustness-checker`).
+5. This skill's own package sign-off decision artifact `methods/Qx/decisions/solution-package-builder_modeler_decision.md` exists with `status: DECIDED` (`decision_id: qx_package_signoff`).
+
+If either is missing, build the human-readable package (so the modeler can see the evidence) but DO NOT emit `frozen_numbers.json` — emit the PENDING sign-off artifact and STOP at the freeze (see Workflow step 7.4).
 
 Additionally useful (but not strictly required):
 - `results/Qx/experiments/final/` — final round outputs.
@@ -58,6 +67,7 @@ Use or request:
 - `robustness/Qx/qx_robustness_report.md` — robustness findings, if available.
 - `methods/Qx/qx_method_candidates.md` — original candidate pool, for method selection narrative.
 - `methods/Qx/qx_method_iteration_log.md` — iteration history, for demonstrating thoroughness.
+- `methods/Qx/qx_decision_log.md` — REQUIRED for the freeze. The canonical, append-only log of the human's `DECIDED` verdicts (method choice, result verdict, confidence, stability). The method-selection narrative is TRANSCRIBED from here with `decision_id` provenance, never re-authored. The G4.5 verdicts here gate the freeze.
 - Figure-table plan relevant to this subquestion.
 - Any existing paper draft sections for this subquestion (to check what's already been written).
 - The problem parse for this subquestion's goals and constraints.
@@ -74,13 +84,13 @@ Use or request:
    - From the final method explanation: extract the method name, selection justification, assumptions, symbols, mathematical model, solution procedure, and evaluation metrics.
    - From the final result analysis: extract key numerical results, figure interpretations, table interpretations, supported claims, and result limitations.
    - From the robustness report (if available): extract stable conclusions, fragile conclusions, perturbation results, and boundary conditions.
-   - From the candidate pool (if available): extract the narrative of method exploration (what was tried, what was dropped, why).
+   - From the candidate pool (if available): extract the raw facts of method exploration (what was tried, what was dropped). **Do NOT re-author the selection verdict** — the *reason* the final method was chosen is TRANSCRIBED from the human's `DECIDED` record in `methods/Qx/qx_decision_log.md` (carry the `decision_id` as provenance). The candidate pool supplies the inventory; the decision log supplies the verdict.
 
 3. Build the solution overview.
    - Write a concise summary of the subquestion goal and how it was solved.
-   - State the final method in one sentence.
+   - State the final method in one sentence (transcribed from the decision log's method-choice verdict, with `decision_id`).
    - State the key result in one sentence.
-   - State the confidence level.
+   - State the confidence level **as an `ai_suggestion`**, clearly labeled — do NOT render it as the verdict. The human confirms or overrides the confidence at the sign-off gate (step 7.4). Once `DECIDED`, transcribe the human's confidence into the package.
    - This overview should be the first thing the paper writer reads.
 
 4. Organize paper-ready content by section.
@@ -94,10 +104,11 @@ Use or request:
    - Provide a draft caption for each.
    - Mark placement suggestions (top of section, after formula X, etc.).
 
-6. Identify gaps and provide fallback guidance.
+6. Identify gaps and FLAG candidate overclaims (as suggestions, not verdicts).
    - If a paper section has no supporting content, state what the writer should do (skip, mark as future work, write a brief note).
-   - If robustness evidence is missing for a claim, downgrade the claim's confidence level.
+   - If robustness evidence is missing for a top-line claim, **FLAG it as a candidate overclaim and SUGGEST a downgrade** in the `ai_suggestion` field of the sign-off artifact — do NOT silently downgrade, keep, or drop it yourself. The human renders `keep/downgrade/drop` per flagged claim at the sign-off gate (step 7.4).
    - If a figure exists but is not paper-quality, note what needs improvement.
+   - Compile the full set of flagged candidate overclaims here — this list feeds directly into the sign-off artifact's per-claim `ai_suggestion` rows.
 
 7. Write the solution package.
    - Save as `results/Qx/reports/qx_solution_package_for_writer.md`.
@@ -105,8 +116,21 @@ Use or request:
    - Include direct quotes from source documents where useful.
    - Include file paths for every referenced artifact.
 
+7.4. **Emit the package sign-off decision artifact, then STOP at the freeze (Gate G4.5 package sign-off).**
+   The freeze in step 7.5 is the results→paper boundary: once a number is frozen, the paper sources it verbatim. So the human must sign off on confidence and claim scope BEFORE the freeze fires. The AI never assigns the verdict.
+   - Create `methods/Qx/decisions/solution-package-builder_modeler_decision.md` following the **Human Decision Artifact Convention** in CLAUDE.md, with:
+     - `schema_version`, `skill: solution-package-builder`, `scope: Qx`, `decision_id: qx_package_signoff`, `decision_point: claim_scope`.
+     - `status: PENDING`, `decided_by: human` (left for the human to confirm), `decided_at` (left blank for the human).
+     - `ai_suggestion`: YOUR own field, clearly labeled as a suggestion — it holds (a) your SUGGESTED overall confidence level, and (b) the list of candidate overclaims you FLAGGED in step 6, each with a SUGGESTED action. It does NOT count as the decision.
+     - `choice`: left as a `<<<HUMAN>>>` sentinel. The human must fill, per top-line claim that the AI flagged as a possible overclaim: a `confidence` level + an `approve ∈ {keep, downgrade, drop}` verdict.
+     - every `rejected_alternatives[*].reason`, `confidence`, and the `## Modeler's rationale` body left as `<<<HUMAN>>>` sentinels for the modeler to fill. The AI must NOT write the rationale.
+     - `evidence_refs`: point at the real files so the human's rationale can cite a concrete token — `results/Qx/reports/qx_final_result_analysis.md`, `robustness/Qx/qx_robustness_report.md`, and the relevant `DECIDED` verdicts in `methods/Qx/qx_decision_log.md`.
+   - Then STOP at the freeze. Do NOT emit `frozen_numbers.json` and do NOT hand off to the writer. Tell the modeler exactly what to fill in. The freeze (step 7.5, Gate G4) stays blocked until BOTH (a) the G4.5 result/stability verdicts are `DECIDED` in the decision log AND (b) this sign-off artifact's `status` is `DECIDED` with a non-empty, non-copied human rationale.
+   - In **learning mode** (if `planning/session_config.json` says so): withhold `ai_suggestion` until after the human writes their rationale, to avoid anchoring. In **speed mode**: show `ai_suggestion` alongside. Either way the human `choice` / rationale fields, their floors, and the copy/evidence checks are identical.
+   - Once the human has `DECIDED`, transcribe their confirmed confidence and per-claim `keep/downgrade/drop` verdicts into the package's section 0 and section 5, then proceed to step 7.5.
+
 7.5. **Freeze numerical claims — emit `frozen_numbers.json` (Gate G4 pass criterion).**
-   This is mandatory, not optional. Without freezing, every bug fix in `code/Qx/` silently shifts paper numbers. With freezing, drift is detectable by `consistency-auditor`.
+   This is mandatory, not optional, but **gated**: do NOT run this step until step 7.4's sign-off artifact is `DECIDED` AND the G4.5 result/stability verdicts are `DECIDED` in `methods/Qx/qx_decision_log.md`. Until then the freeze is blocked — emit the PENDING sign-off artifact and STOP. Once unblocked, freeze exactly as below. Without freezing, every bug fix in `code/Qx/` silently shifts paper numbers; with freezing, drift is detectable by `consistency-auditor`. (The freeze mechanics below — provenance schema, immutability, 解冻/修改/重冻结 — are unchanged; only a human-signoff precondition was added before the freeze fires.)
 
    - Walk the solution package and extract every numerical claim (every value the paper will report).
    - For each, record provenance: which file (final analysis report / metric file / code constant) it came from, which line, and its frozen value.
@@ -151,17 +175,18 @@ Use or request:
    `paper-section-writer` reads numbers from this file, not from raw results. `consistency-auditor` compares paper text against this file. The freeze is the single canonical anchor.
 
 8. Update the workflow status.
-   - This subquestion is now "Ready for Writer" (confirmed, not just claimed).
-   - Hand off to `paper-section-writer`.
+   - The subquestion becomes "Ready for Writer" ONLY after step 7.5's freeze has actually fired — i.e., the `qx_package_signoff` artifact is `DECIDED` and the G4.5 verdicts are `DECIDED`. If the freeze is still blocked, the status is "Awaiting Modeler Sign-off", not Ready for Writer.
+   - Hand off to `paper-section-writer` only once `frozen_numbers.json` exists. Otherwise hand back to the modeler for the sign-off.
 
 # Outputs
 
-Produce two artifacts:
+Produce:
 
-- `results/Qx/reports/qx_solution_package_for_writer.md` — the human-readable writer-facing package.
-- `results/Qx/reports/frozen_numbers.json` — the immutable numerical snapshot (Gate G4 pass criterion).
+- `results/Qx/reports/qx_solution_package_for_writer.md` — the human-readable writer-facing package (always produced).
+- `methods/Qx/decisions/solution-package-builder_modeler_decision.md` — the PENDING package sign-off artifact (`decision_id: qx_package_signoff`), awaiting the human's confidence + per-claim `keep/downgrade/drop` verdicts. Always produced.
+- `results/Qx/reports/frozen_numbers.json` — the immutable numerical snapshot (Gate G4 pass criterion). **Emitted ONLY after** the sign-off artifact is `DECIDED` and the G4.5 result/stability verdicts are `DECIDED`. Until then, this skill STOPS at the freeze and does not produce it.
 
-The solution package is the document the paper writer reads; `frozen_numbers.json` is the canonical source from which the writer sources every numerical claim. Both must exist; the package without the freeze is incomplete.
+The solution package is the document the paper writer reads; `frozen_numbers.json` is the canonical source from which the writer sources every numerical claim. The freeze without a human sign-off is forbidden; the package without the (gated) freeze is not yet Ready for Writer.
 
 # Output format
 
@@ -179,9 +204,9 @@ The solution package MUST contain all of the following sections:
 ## 0. Quick Reference
 
 - **Subquestion**: [one-line description]
-- **Final method**: [method name]
+- **Final method**: [method name — transcribed from decision log, decision_id: qx_method_choice]
 - **Key result**: [one-line main finding]
-- **Confidence**: [high / medium / needs caution]
+- **Confidence**: [PENDING sign-off → ai_suggestion: high/medium/needs caution | after DECIDED → human-confirmed level from qx_package_signoff]
 - **Estimated paper pages**: [rough estimate]
 
 ---
@@ -196,7 +221,7 @@ The solution package MUST contain all of the following sections:
 [2-3 sentence summary from final method explanation]
 
 ### 2.2 Method Selection Narrative
-[Brief story of exploration: what was tried, what was dropped, why the final method was chosen. Source: candidate pool + iteration log + final method explanation]
+[Brief story of exploration: what was tried, what was dropped. Source: candidate pool + iteration log. The *reason the final method was chosen* is TRANSCRIBED verbatim from the human's DECIDED verdict in `methods/Qx/qx_decision_log.md` — cite the `decision_id` (e.g., qx_method_choice). Do NOT re-author the selection verdict here.]
 
 ### 2.3 Relationship to Other Subquestions
 [Inputs from / outputs to other subquestions]
@@ -273,10 +298,10 @@ The solution package MUST contain all of the following sections:
 |---|-------|----------|------------|
 | 1 | [claim] | [figure/table/metric] | high / medium |
 
-### Claims to Downgrade or Avoid
-| # | Claim | Why Not Fully Supported | Suggested Alternative |
-|---|-------|------------------------|----------------------|
-| 1 | [overclaim] | [missing evidence] | [safer claim] |
+### Flagged Candidate Overclaims (AI flags; human renders keep/downgrade/drop at qx_package_signoff)
+| # | Claim | Why AI Flagged It | ai_suggestion (keep/downgrade/drop + safer claim) | Human Verdict (from sign-off artifact) |
+|---|-------|-------------------|--------------------------------------------------|----------------------------------------|
+| 1 | [overclaim] | [missing evidence] | [SUGGESTED action — not a verdict] | [keep/downgrade/drop — PENDING until DECIDED] |
 
 ### Claims from Eliminated Methods (for demonstrating thoroughness)
 | # | Method | Finding | Can Mention in Paper? |
@@ -329,7 +354,11 @@ The solution package MUST contain all of the following sections:
 - Keep the recommendation voice neutral — this package informs the writer, it does not command them.
 - Mark content quality levels: "ready to write as-is", "needs adaptation", "for reference only".
 - If the package reveals that the subquestion is NOT actually Ready for Writer (e.g., key results are missing, major claims are unsupported), report this honestly and recommend returning to the appropriate upstream skill.
-- **`frozen_numbers.json` is mandatory** — without it, Gate G4 fails and the paper writer cannot proceed. The package alone is not enough; the freeze is the canonical anchor.
+- **This skill never assigns the sign-off verdict.** It does NOT decide the package's confidence level, and it does NOT decide `keep/downgrade/drop` for any flagged claim. It FLAGS candidate overclaims and SUGGESTS a confidence, both in the `ai_suggestion` field. The human renders all of these at Gate G4.5 (the `qx_package_signoff` decision artifact). Do NOT infer the verdict from your own suggestion.
+- **This skill never fills the human rationale.** The `## Modeler's rationale` body and the `choice` / `confidence` fields in `methods/Qx/decisions/solution-package-builder_modeler_decision.md` are left as `<<<HUMAN>>>` sentinels. The human authors them.
+- **The method-selection narrative is TRANSCRIBED, not re-authored.** The reason the final method was chosen comes verbatim (with `decision_id` provenance) from `methods/Qx/qx_decision_log.md`. Do not re-compose a fresh justification.
+- **The freeze is gated on human sign-off.** Do NOT emit `frozen_numbers.json` until BOTH (a) the G4.5 result/stability verdicts are `DECIDED` in the decision log AND (b) the `qx_package_signoff` artifact is `DECIDED` with a non-empty, non-copied human rationale. Until then, emit the PENDING sign-off artifact and STOP at the freeze.
+- **`frozen_numbers.json` is mandatory** (once unblocked) — without it, Gate G4 fails and the paper writer cannot proceed. The package alone is not enough; the freeze is the canonical anchor. But the freeze must never fire ahead of the human sign-off.
 - **Never edit `frozen_numbers.json` by hand**. To change a frozen value, walk the `解冻 → 修改 → 重冻结` three-step (log the reason in `freeze_change_log.md`, update the source, re-invoke this skill).
 
 # Verification
@@ -344,8 +373,12 @@ Before handing off, verify:
 - Cross-reference file paths are correct.
 - No fabricated content exists.
 - The package completeness checklist is honest.
-- **`results/Qx/reports/frozen_numbers.json` exists** with a valid `frozen_at` timestamp newer than every `code_source_files` mtime (no stale freeze on first emission).
-- Every numerical claim in the package text appears in `frozen_numbers.json` with matching value.
+- The confidence level and any claim downgrade/drop are presented as `ai_suggestion`, NOT as the skill's verdict, until the human has signed off.
+- The method-selection narrative is transcribed from the decision log with a `decision_id`, not freshly authored here.
+- **The PENDING sign-off artifact `methods/Qx/decisions/solution-package-builder_modeler_decision.md` exists** (`decision_id: qx_package_signoff`, `status: PENDING`, `ai_suggestion` filled, `choice` / `confidence` / rationale left as `<<<HUMAN>>>`).
+- **The freeze precondition is satisfied before `frozen_numbers.json` is emitted**: the sign-off artifact's `status` is `DECIDED` (`decided_by: human`) AND the G4.5 result/stability verdicts are `DECIDED` in `methods/Qx/qx_decision_log.md`. If either is missing, the freeze must NOT have been emitted.
+- **Once unblocked, `results/Qx/reports/frozen_numbers.json` exists** with a valid `frozen_at` timestamp newer than every `code_source_files` mtime (no stale freeze on first emission).
+- Every numerical claim in the package text appears in `frozen_numbers.json` with matching value (checked only after the freeze is unblocked and emitted).
 
 # Failure modes
 
@@ -367,6 +400,7 @@ This skill must stop instead of guessing when:
 - A figure or table is referenced but does not exist, and the gap is material to the paper.
 - The content would require inventing bridging narrative between contradictory sources.
 - The package would mislead the writer into making unsupported claims.
+- **The freeze is requested but the human sign-off is not in place** — the `qx_package_signoff` artifact is not `DECIDED`, or the G4.5 result/stability verdicts are not `DECIDED` in the decision log. Build the package and emit the PENDING sign-off artifact, but STOP at the freeze; do NOT emit `frozen_numbers.json`, and do NOT hand off to the writer.
 
 When stopping, output:
 
@@ -378,10 +412,12 @@ When stopping, output:
 
 # Handoff
 
-After producing `results/Qx/reports/qx_solution_package_for_writer.md`, hand off to:
+After producing `results/Qx/reports/qx_solution_package_for_writer.md` AND the PENDING `qx_package_signoff` artifact, hand back to the **modeler** to render the sign-off (confidence + per-claim `keep/downgrade/drop`). The freeze and the writer handoff are blocked until that artifact is `DECIDED` and the G4.5 verdicts are `DECIDED`. `modeler-decision-logger` collects the sign-off into `methods/Qx/qx_decision_log.md`.
+
+Only after the freeze has fired (`frozen_numbers.json` emitted), hand off to:
 
 `paper-section-writer`
-— with the solution package path, figure/table inventory, claims inventory, and section mapping.
+— with the solution package path, the frozen-numbers file, figure/table inventory, claims inventory, and section mapping.
 
 If the package reveals missing prerequisites, hand back to:
 

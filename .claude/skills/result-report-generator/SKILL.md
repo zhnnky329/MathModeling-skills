@@ -11,9 +11,11 @@ Generate structured experiment reports and final result analysis for each subque
 This skill converts raw experimental outputs into readable, comparative reports that:
 - Explain what each method produced, numerically and visually.
 - Compare multiple candidate methods head-to-head on defined metrics.
-- Judge whether results are good enough to proceed or need method revision.
+- Lay out the evidence for whether results are good enough to proceed or need method revision — **as an AI suggestion, not a verdict**.
 - Tell the modeler what to fix or reconsider.
 - Tell the paper writer what results are usable, what claims are supported, and what visual evidence exists.
+
+This skill does NOT originate the graded result verdict. It does not assign the per-method `[CHOSEN]/[BACKUP]/[REJECTED]` label, the round decision (proceed/iterate/return), or the confidence level. Those are the single most graded result-stage judgments — they propagate into the paper and then get frozen. The AI lays out the comparison evidence and an explicitly-labeled `[AI-SUGGESTED — not a verdict]` read, then STOPS and emits a PENDING decision artifact for the human to render the verdict (see Workflow step 8.5 / Gate G4.5).
 
 This skill does not run experiments, generate figures from scratch, select model methods, write final paper sections, or perform QA.
 
@@ -82,22 +84,23 @@ Use or request:
    - State trade-offs between methods (speed vs accuracy, simplicity vs precision, interpretability vs fit).
    - Do not hide poor performance.
 
-4. Judge result quality and assign archival labels.
-   - For each method, state whether results are: `[CHOSEN]` (good enough — keep in main tree), `[BACKUP]` (keep but secondary), or `[REJECTED]` (drop and archive).
-   - Give a concrete reason for each judgment tied to metrics, visual evidence, or method-plan requirements.
-   - If a method's output is clearly wrong (infeasible, contradictory, nonsensical), flag it `[REJECTED]` with explicit reason.
-   - **For every `[REJECTED]` method**, move its outputs from the main tree to the archive:
+4. Lay out result quality and a SUGGESTED archival read — do NOT assign the verdict labels.
+   - For each method, present the evidence and your `[AI-SUGGESTED — not a verdict]` read of whether it looks like a keeper, a secondary backup, or a drop candidate. In the experiment report, tag every per-method line `[PENDING-MODELER]` — never `[CHOSEN]/[BACKUP]/[REJECTED]` here. The graded label is the human's to render in the decision artifact (step 8.5).
+   - Give a concrete reason for each suggested read tied to metrics, visual evidence, or method-plan requirements, so the human's rationale can cite it.
+   - If a method's output is clearly wrong (infeasible, contradictory, nonsensical), say so plainly with explicit evidence, but still tag it `[PENDING-MODELER]` and surface it as a strong drop candidate — do NOT pre-stamp `[REJECTED]`.
+   - **Archival is gated on the HUMAN verdict, not on an AI label.** Do NOT move any code or outputs in this step. Archival fires only after the modeler tags a method `REJECTED` in the decision artifact (step 8.5). Once a method carries a HUMAN-tagged `REJECTED`, then — and only then — move its outputs from the main tree to the archive (the mechanism below is unchanged; only its trigger moved to the human verdict):
      - Move `code/Qx/<method>_main.py` (or `.m`) → `workspace/archived/<Qx>/<method>_REJECTED_roundN/`.
      - Move its outputs in `results/Qx/experiments/roundN/figures/<method>_*` and `tables/<method>_*` → same archive directory.
-     - Leave a one-line breadcrumb in `methods/Qx/qx_method_iteration_log.md` (e.g., "Round 1: M3 [REJECTED] — constraint infeasibility, archived to workspace/archived/Q3/m3_REJECTED_round1/").
-   - The main tree under `code/Qx/` and `results/Qx/experiments/` should contain ONLY `[CHOSEN]` and `[BACKUP]` methods after this step. `[REJECTED]` outputs in the main tree are a workflow defect — they drift into the paper by accident.
+     - Leave a one-line breadcrumb in `methods/Qx/qx_method_iteration_log.md` (e.g., "Round 1: M3 [REJECTED by modeler decision qx_result_verdict] — constraint infeasibility, archived to workspace/archived/Q3/m3_REJECTED_round1/").
+   - The main tree under `code/Qx/` and `results/Qx/experiments/` should contain ONLY methods the human kept (`CHOSEN`/`BACKUP`) after a HUMAN-tagged rejection has been archived. An AI label never triggers archival; a stray AI `[REJECTED]` in the main tree is itself a workflow defect.
 
-5. Decide on iteration.
-   - State unambiguously whether this subquestion should:
-     - Proceed to final method selection (results are good enough).
-     - Return to the modeler for method revision (results are poor or methods need redesign).
+5. Lay out the iteration evidence — do NOT decide the round outcome.
+   - Present the evidence for whether this subquestion should:
+     - Proceed to final method selection (results look good enough).
+     - Return to the modeler for method revision (results look poor or methods need redesign).
      - Run another round of experiments (more tuning or alternative methods needed).
-   - If returning to modeler, state specifically what about the method is failing and what the modeler should reconsider.
+   - State your `[AI-SUGGESTED — not a verdict]` read of the round outcome, with the reasoning. The actual `round_decision ∈ {proceed, iterate, return}` is the human's to render in the decision artifact (step 8.5).
+   - If your suggestion is "return", state specifically what about the method appears to be failing and what the modeler should reconsider — so the human can act on it.
 
 6. Identify paper-ready materials.
    - List which figures and tables can go into the paper directly.
@@ -112,7 +115,22 @@ Use or request:
 8. Produce the final result analysis (when all rounds are complete and final method is selected).
    - Save as `results/Qx/reports/qx_final_result_analysis.md`.
    - This is the definitive result document for the paper writer.
-   - Only produce this when the modeler has confirmed the final method.
+   - Only produce this when the modeler has confirmed the final method **in a DECIDED decision artifact** (step 8.5).
+   - You MAY draft the descriptive and interpretive content (what each figure/table shows, what the numbers are). But the verdict/confidence content — which method was chosen, which were rejected, the confidence level, and the round outcome — must be **transcribed from the DECIDED decision artifact**, not AI-authored. If the artifact is still `PENDING`, do NOT write the verdict/confidence fields; the analysis is not final.
+
+8.5. Emit the modeler decision artifact, then STOP (Gate G4.5).
+   - This is the load-bearing change: the per-method verdict, the round decision, and the confidence level are the single most graded result-stage judgments. They propagate into the paper and then get frozen. The AI must not originate them.
+   - Create `methods/Qx/decisions/result-report-generator_modeler_decision.md` following the **Human Decision Artifact Convention** in CLAUDE.md, with:
+     - `decision_id: qx_result_verdict`, `status: PENDING`, `decided_by: human` (left for the human to confirm).
+     - `ai_suggestion`: your read of which method looks best and why, plus your suggested round outcome and confidence — clearly labeled `[AI-SUGGESTED — not a verdict]`, in its own field. This does NOT count as the decision.
+     - Mandatory HUMAN fields, left as `<<<HUMAN>>>` sentinels for the modeler to fill:
+       - per-method `choice ∈ {CHOSEN, BACKUP, REJECTED}` + a rationale tied to a stated criterion (metric, visual evidence, or method-plan requirement);
+       - `round_decision ∈ {proceed, iterate, return}`;
+       - a `confidence` level per top-line claim, with a rationale that cites a specific computed number.
+     - `rejected_alternatives[*].reason`: left as `<<<HUMAN>>>` for the modeler.
+     - `evidence_refs`: point at the real cross-method comparison tables / metrics files under `results/Qx/experiments/roundN/` (e.g., the metrics CSV and the experiment report's comparison table) so the human's rationale can cite a concrete computed number. Refs must resolve to real files.
+   - Then STOP and tell the modeler exactly what to fill in. Do NOT trigger `[REJECTED]` archival, do NOT finalize the verdict/confidence content of `qx_final_result_analysis.md`, and do NOT proceed to freeze. Gate G4.5 keeps `freeze_allowed_Qx = false` until this artifact's `status` is `DECIDED` with a non-empty, non-copied human rationale that cites evidence.
+   - In **learning mode** (if `planning/session_config.json` says so): withhold `ai_suggestion` until after the human writes their rationale, to avoid anchoring. In **speed mode**: show `ai_suggestion` alongside. Either way the human fields, their floor, and the copy/evidence checks are identical.
 
 9. Hand off to the appropriate next skill.
    - If results need method revision: hand off to `final-method-explainer` or `method-selector`.
@@ -123,8 +141,9 @@ Use or request:
 
 Produce the following artifacts as appropriate for the current stage:
 
-- `results/Qx/experiments/roundN/qx_experiment_report_roundN.md` — Intermediate report comparing all methods run in this round.
-- `results/Qx/reports/qx_final_result_analysis.md` — Final comprehensive result analysis (only when method is locked).
+- `results/Qx/experiments/roundN/qx_experiment_report_roundN.md` — Intermediate report comparing all methods run in this round (per-method lines tagged `[PENDING-MODELER]`, not verdict labels).
+- `methods/Qx/decisions/result-report-generator_modeler_decision.md` — PENDING decision artifact (decision_id `qx_result_verdict`) awaiting the human verdict. Blocks Gate G4.5 — see Workflow step 8.5.
+- `results/Qx/reports/qx_final_result_analysis.md` — Final comprehensive result analysis (only when the decision artifact is `DECIDED`; its verdict/confidence content is transcribed from that artifact, not AI-authored).
 
 Each report type has different content requirements (see below).
 
@@ -145,16 +164,17 @@ Must contain:
 
 ## 2. Per-Method Results
 
-### Method M1: [name]  [CHOSEN | BACKUP | REJECTED]
+### Method M1: [name]  [PENDING-MODELER]
 - **Key outputs**: [numerical summary]
 - **Figures generated**: [list with one-sentence interpretation each]
 - **Tables generated**: [list with one-sentence interpretation each]
 - **Metrics**: [values against expected ranges]
-- **Verdict**: [CHOSEN — keep in main tree / BACKUP — secondary / REJECTED — archived]
-- **Reason**: [concrete evidence-based reason]
-- **Archive action** (only if REJECTED): "Moved code/Qx/m1_main.py and results/Qx/experiments/roundN/figures/m1_*.png to workspace/archived/Qx/m1_REJECTED_roundN/"
+- **AI-suggested read** `[AI-SUGGESTED — not a verdict]`: [looks like keeper / secondary backup / strong drop candidate]
+- **Reason**: [concrete evidence-based reason the human can cite]
+- **Verdict**: `[PENDING-MODELER]` — rendered by the human in `methods/Qx/decisions/result-report-generator_modeler_decision.md` (Gate G4.5). No `[CHOSEN]/[BACKUP]/[REJECTED]` here.
+- **Archive action**: none in this report. Archival fires only after a HUMAN-tagged `REJECTED` in the decision artifact.
 
-### Method M2: [name]
+### Method M2: [name]  [PENDING-MODELER]
 ...
 
 ## 3. Cross-Method Comparison
@@ -164,9 +184,10 @@ Must contain:
 | [criterion] | [value] | [value] | [value] | [best] |
 
 ## 4. Overall Assessment
-- **Round verdict**: [proceed to final / return to modeler / run another round]
-- **If returning to modeler**: [specific issues and suggestions]
-- **If proceeding**: [which method is recommended and why]
+- **AI-suggested round read** `[AI-SUGGESTED — not a verdict]`: [proceed to final / return to modeler / run another round] — suggestion only
+- **If suggesting return to modeler**: [specific issues and suggestions]
+- **If suggesting proceed**: [which method looks best and why]
+- **Round decision**: `[PENDING-MODELER]` — the human renders `round_decision ∈ {proceed, iterate, return}` in `methods/Qx/decisions/result-report-generator_modeler_decision.md` (Gate G4.5). The freeze stays blocked until then.
 
 ## 5. Paper-Ready Materials
 - **Can use now**: [figures/tables/claims ready for paper]
@@ -186,9 +207,11 @@ Must contain:
 # Qx Final Result Analysis
 
 ## 1. Method Selection Summary
-- Final selected method: [name]
-- Eliminated methods and reasons for elimination
-- Selection criteria and how the final method performed on each
+*(verdict content transcribed from the DECIDED decision artifact `qx_result_verdict`, not AI-authored)*
+- Final selected method: [name — from human `choice: CHOSEN` in the decision artifact]
+- Eliminated methods and reasons for elimination [from human `choice: REJECTED` + rationale]
+- Selection criteria and how the final method performed on each [descriptive — AI may write; the *which-was-chosen* is the human's]
+- Decision provenance: `methods/Qx/decisions/result-report-generator_modeler_decision.md` (status DECIDED, decided_by human)
 
 ## 2. Final Results
 - **Key numerical outputs**: [comprehensive results]
@@ -198,9 +221,9 @@ Must contain:
   - [table path]: [what it shows, what claim it supports]
 
 ## 3. Result Quality Assessment
-- **Confidence level**: [high / medium / needs caution]
-- **Limitations**: [what this result cannot claim]
-- **Stability**: [known from robustness checks or flagged as unchecked]
+- **Confidence level**: [high / medium / needs caution — transcribed from the human `confidence` field in the decision artifact, NOT AI-assigned]
+- **Limitations**: [what this result cannot claim — descriptive, AI may write]
+- **Stability**: [known from robustness checks or flagged as unchecked — descriptive, AI may write]
 
 ## 4. Paper Writing Support
 - **Supported claims** (ready for paper):
@@ -222,8 +245,10 @@ Must contain:
 - Do not list file names without explaining what they contain.
 - Every figure must be interpreted: what pattern, trend, or anomaly does it show?
 - Every table must be interpreted: what is the key takeaway?
-- Every method must receive a clear verdict (`[CHOSEN] / [BACKUP] / [REJECTED]`) with an evidence-based reason.
-- **`[REJECTED]` methods must be archived**, not just labeled. Move their code and outputs to `workspace/archived/<Qx>/<method>_REJECTED_roundN/`. Leaving them in the main tree is a workflow defect.
+- **This skill never assigns the graded verdict.** It does not originate the per-method `[CHOSEN]/[BACKUP]/[REJECTED]` label, the round decision, or the confidence level. It presents the evidence + an `[AI-SUGGESTED — not a verdict]` read, tags per-method lines `[PENDING-MODELER]`, then STOPS and emits the PENDING decision artifact. The human renders the verdict at Gate G4.5.
+- **Do NOT fill the human rationale.** The `## Modeler's rationale` body, the per-method `choice`, `round_decision`, `confidence`, and `rejected_alternatives[*].reason` are left as `<<<HUMAN>>>` sentinels. The AI never writes them.
+- **`[REJECTED]` archival fires ONLY off a HUMAN-tagged rejection**, never an AI label. Keep the archival mechanism (move code + outputs to `workspace/archived/<Qx>/<method>_REJECTED_roundN/`, breadcrumb in the iteration log), but trigger it only after the modeler tags a method `REJECTED` in the decision artifact. A stray AI `[REJECTED]` in the main tree is itself a workflow defect.
+- **The final result analysis transcribes verdict/confidence from the DECIDED artifact**, it does not author them. AI may draft descriptive/interpretive content; the which-was-chosen, which-rejected, confidence, and round outcome come from the human decision.
 - Comparison must be on explicit criteria, not vague impressions.
 - Poor results must be reported honestly. Do not sugarcoat.
 - If results are insufficient, state exactly what the modeler should reconsider.
@@ -241,11 +266,14 @@ Before handing off, verify:
 - Every method executed in this round has an interpreted summary.
 - Every figure and table is interpreted, not just listed.
 - A comparison table or structured comparison exists.
-- Verdicts are supported by specific evidence.
+- **No graded verdict was originated by the AI.** Per-method lines are tagged `[PENDING-MODELER]` (not `[CHOSEN]/[BACKUP]/[REJECTED]`); the round outcome and confidence are presented as `[AI-SUGGESTED — not a verdict]`. The human decides at Gate G4.5.
+- **The decision artifact `methods/Qx/decisions/result-report-generator_modeler_decision.md` exists with `status: PENDING`**, `decision_id: qx_result_verdict`, `ai_suggestion` filled, `evidence_refs` resolving to real metrics/comparison files, and `choice` / `round_decision` / `confidence` / rationale left as `<<<HUMAN>>>` for the modeler.
+- AI-suggested reads are supported by specific evidence the human can cite.
+- **No `[REJECTED]` archival was triggered by an AI label.** Archival (and the verdict/confidence content of `qx_final_result_analysis.md`) is performed only after the artifact is `DECIDED` by the human.
 - Paper-ready materials are distinguished from materials needing work.
 - The recommended next action is clear and actionable.
 - No fabricated numbers, figures, or interpretations exist.
-- If returning to modeler, the feedback is specific enough to act on.
+- If suggesting return to modeler, the feedback is specific enough to act on.
 
 # Failure modes
 
@@ -255,8 +283,9 @@ Stop and report a blocker if:
 - The method plan is missing, so there is no basis for judging results.
 - All methods failed to produce meaningful outputs (all errors, no results).
 - Outputs are present but uninterpretable without additional context that is unavailable.
-- The user asks for a final result analysis but no method has been finalized by the modeler.
+- The user asks for a final result analysis but the decision artifact is still `PENDING` (no human verdict yet).
 - The user asks to fabricate favorable interpretations for poor results.
+- The user asks the AI to assign the per-method verdict, round decision, or confidence directly, bypassing the human decision artifact.
 
 # Stop conditions
 
@@ -267,7 +296,7 @@ This skill must stop instead of guessing when:
 - Important metrics are missing and cannot be inferred from available outputs.
 - Figures cannot be interpreted without the code that generated them and the code is unavailable.
 - Interpretation would require inventing data, metrics, or causal claims.
-- The user asks for a "final" report but the modeler has not confirmed the final method.
+- The user asks for a "final" report but the modeler has not confirmed the final method in a `DECIDED` decision artifact.
 
 When stopping, output:
 
@@ -280,15 +309,15 @@ When stopping, output:
 
 # Handoff
 
-After producing an experiment report (round N, not final):
+After producing an experiment report (round N, not final) **and the PENDING decision artifact**:
 
-`workflow-orchestrator`
-— provides the round report and indicates whether more rounds are needed.
+`workflow-orchestrator` (and STOP for the human verdict)
+— provides the round report + the PENDING `qx_result_verdict` decision artifact. Gate G4.5 keeps the freeze blocked until the modeler renders the verdict (`status: DECIDED`). Do not proceed past the human.
 
-After producing a final result analysis (final method locked):
+After the modeler renders the verdict (artifact `DECIDED`) and the final result analysis is produced:
 
 `solution-package-builder` or `final-method-explainer`
-— provides the final result analysis, figure paths, table paths, and supported claims.
+— provides the final result analysis (verdict/confidence transcribed from the artifact), figure paths, table paths, and supported claims.
 
 If the report indicates method revision is needed:
 
@@ -326,11 +355,12 @@ Output (summary):
 | Differentiation power | Low | High | High | M2, M3 |
 
 ## 4. Overall Assessment
-- **Round verdict**: proceed to final — M2 is recommended as the main method.
-- **Reason**: M2 (Entropy-TOPSIS) provides objective data-driven weights with high stability and good differentiation. M3 (AHP-TOPSIS) requires subjective pairwise comparisons that are hard to justify without domain expert input. M1 is retained as a baseline reference for the paper.
+- **AI-suggested round read** `[AI-SUGGESTED — not a verdict]`: proceed to final — M2 looks like the best main method.
+- **Reason**: M2 (Entropy-TOPSIS) provides objective data-driven weights with high stability and good differentiation. M3 (AHP-TOPSIS) requires subjective pairwise comparisons that are hard to justify without domain expert input. M1 is a natural baseline reference for the paper.
+- **Round decision**: `[PENDING-MODELER]` — the modeler renders `round_decision` and the per-method `choice` in `methods/Q1/decisions/result-report-generator_modeler_decision.md` (Gate G4.5). The freeze stays blocked until then.
 
 ## 6. Recommended Next Step
-- hand off to final-method-explainer to lock in M2 as the final method.
+- STOP. Emit the PENDING `q1_result_verdict` decision artifact and hand back to the modeler to render the verdict. After it is DECIDED, hand off to final-method-explainer for the human-chosen method.
 ```
 
 ## Example 2: Round 1 experiment report — return to modeler
@@ -346,14 +376,15 @@ Output (summary):
 # Q3 Experiment Report — Round 1
 
 ## 4. Overall Assessment
-- **Round verdict**: return to modeler.
+- **AI-suggested round read** `[AI-SUGGESTED — not a verdict]`: return to modeler.
 - **Issues to fix**:
   - M2 (linear programming): The output violates resource constraints. The modeler should re-check constraint formulation — specifically, whether capacity limit `C_max = 100` is correct and whether demand requirements are properly bounded.
   - M1 (greedy): Works correctly but cost is 45% higher than a theoretical lower bound. The modeler should decide whether a 45% cost gap is acceptable or whether a better method is needed.
   - Suggestion: if constraints are fixed in M2, run a new round with corrected M2. If not, consider whether M1 is "good enough" for contest purposes.
+- **Round decision**: `[PENDING-MODELER]` — the modeler renders `round_decision ∈ {proceed, iterate, return}` in the decision artifact (Gate G4.5). No archival of M2 happens until the modeler tags it `REJECTED` there.
 
 ## 6. Recommended Next Step
-- hand off to method-selector or the modeler to fix constraint specification for M2.
+- STOP. Emit the PENDING `q3_result_verdict` decision artifact and hand back to the modeler to render the verdict (and decide whether to fix M2's constraints). Archival fires only off the human's `REJECTED` tag.
 ```
 
 ## Example 3: Final result analysis
