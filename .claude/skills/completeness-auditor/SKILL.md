@@ -49,6 +49,29 @@ This is the canonical list of files that must exist for "completion" to be real.
 | `solution-package-builder` | `results/Qx/reports/qx_solution_package_for_writer.md` + `results/Qx/reports/frozen_numbers.json` | (structural) |
 | `figure-table-planner` | `methods/Qx/qx_figure_table_plan.md` | (structural) |
 | `method-selector` | `methods/Qx/qx_method_candidates.md` + `methods/Qx/qx_method_iteration_log.md` | (structural) |
+| `modeler-decision-logger` | `methods/Qx/qx_decision_log.md` | (decision-record check — see below) |
+
+### Human decision artifacts (the enforcement arm for the human gates)
+
+These are the files the human-decision gates (G2.5, G4.5, G4 sign-off) block on. `completeness-auditor` is what makes those gates real: a missing, PENDING, or under-floor decision artifact is a structural gap caught here, exactly like a missing review file. This is the `judgment-gate-checker` rule, folded in (no separate skill).
+
+| Gate | Producer skill | Required decision artifact | DECIDED-check |
+|------|----------------|----------------------------|---------------|
+| G2.5 | `method-selector` | `methods/Qx/decisions/method-selector_modeler_decision.md` (`qx_method_choice`) | yes |
+| G4.5 | `result-report-generator` | `methods/Qx/decisions/result-report-generator_modeler_decision.md` (`qx_result_verdict`) | yes |
+| G4.5 | `robustness-checker` | `methods/Qx/decisions/robustness-checker_modeler_decision.md` (`qx_stability_verdict`) | yes |
+| G4.5 | `final-method-explainer` | `methods/Qx/decisions/final-method-explainer_modeler_decision.md` (`qx_method_explanation`) | yes |
+| G4 | `solution-package-builder` | `methods/Qx/decisions/solution-package-builder_modeler_decision.md` (`qx_package_signoff`) | yes |
+
+**DECIDED-check** (mechanical, no NLP — this is what a human gate's pass keys on):
+1. File exists.
+2. Front-matter `status: DECIDED` AND `decided_by: human` (`PENDING` / `ai` / `auto` ⇒ FAIL — treat like a missing artifact).
+3. Every mandatory human field present, over its char floor, no surviving sentinel (`<<<`, `TODO`, `TBD`, `待补充`, `...`, empty).
+4. The `## Modeler's rationale` body is NOT a near-verbatim copy of `ai_suggestion` (normalized-whitespace equality / tiny edit distance only — fuzzy similarity is a WARN written to the provenance ledger, NEVER a FAIL; formulas and `symbol_table.md` symbols are exempt).
+5. The rationale cites ≥1 concrete token from `evidence_refs` (a number, a candidate id, a symbol). For `qx_stability_verdict` and `confidence` rationales this is HARD (must cite a number); elsewhere it is a WARN.
+6. Staleness: if a `code/Qx/*` file is newer than the decision's `decided_at` and the decision sat behind a now-changed result, flag `STALE — modeler must re-confirm` (same mtime rule as `frozen_numbers.json`).
+
+A decision artifact failing any of 1–3 is BLOCKING (the gate cannot pass). Item 4 failing is BLOCKING (it's a copy). Items 5–6 produce WARN unless noted HARD. Report each with the exact field, so the modeler knows precisely what to fill.
 
 ## Global (project-wide)
 

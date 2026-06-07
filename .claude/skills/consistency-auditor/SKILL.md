@@ -10,11 +10,12 @@ Independent cross-media consistency auditor. This skill exists because the rest 
 
 This skill compares the **same fact stated in multiple places** and reports every divergence. It does not believe any single source — it cross-checks them.
 
-The audit covers four dimensions:
+The audit covers five dimensions:
 1. **Numbers** — every numerical claim in `paper/sections/*.tex` is traced back to a result artifact (`results/Qx/reports/*.md`, `results/Qx/experiments/*/metrics/*.json|csv`, `frozen_numbers.json`).
 2. **File names** — every figure/table/appendix code reference in the paper must point to a file that exists on disk.
 3. **Symbols** — symbols used in `paper/sections/*.tex` and `methods/Qx/qx_final_method_explanation.md` must be defined in `planning/symbol_table.md`, with the same meaning everywhere.
 4. **Parameters** — parameter values written into the paper (e.g. K=30, α=0.05, seed=2026) must match the values actually used in `code/Qx/*.py` or `code/matlab/Qx/*.m`.
+5. **Decision provenance** — every judgment claim in the paper ("we chose X because…", confidence, verdict) must trace to a `DECIDED` record in `methods/Qx/qx_decision_log.md` via a `decision_id` marker. This is the decision-side analogue of the numbers check; it stops the AI from re-authoring the human's reasoning.
 
 This skill does NOT write the paper, fix the code, or regenerate results. It only reports divergences and routes them to the right repair skill.
 
@@ -114,6 +115,14 @@ Scan and read:
    - Extract every named parameter value claimed in paper or method explanation (e.g., `K=30`, `α=0.05`, `learning_rate=0.001`, random seed).
    - Find the corresponding value in `code/Qx/` (search for assignments like `K = 30`, `SEED = 2026`, `alpha = 0.05`).
    - Report any parameter where paper and code disagree.
+
+7.5. **Audit decision-narrative provenance (the rationale-laundering check).**
+   This is the decision-side analogue of the numbers check: just as every paper number must trace to `frozen_numbers.json`, every *judgment claim* must trace to a human decision record. It is what stops the AI from re-authoring "why we chose X" downstream of the human's logged reason.
+   - Extract every method-justification / verdict / confidence sentence from `paper/sections/*.tex`, `methods/Qx/qx_final_method_explanation.md`, and `results/Qx/reports/qx_solution_package_for_writer.md` — i.e., every "we chose X because…", "the result is reliable because…", "we are confident that…".
+   - Each such sentence MUST carry a `decision_id` provenance marker (e.g., `<!-- from Q1-D03 -->`) that resolves to a `DECIDED` record in `methods/Qx/qx_decision_log.md`.
+   - Report as **BLOCKING** any judgment sentence with no `decision_id`, or whose `decision_id` does not exist / is not `DECIDED` in the log → `repair_skill: modeler-decision-logger` (the human must log the decision) or `final-method-explainer` / `solution-package-builder` (must transcribe, not re-author).
+   - Also flag the reverse: a `DECIDED` method-choice record whose rationale appears **nowhere** in the paper (informational — the team's reasoning isn't being used).
+   - Staleness: if a decision record is marked `STALE` by `completeness-auditor` (its underlying number changed), any paper sentence citing it is suspect → WARN.
 
 8. **Build the audit report.**
    Save to `paper/audits/cross_media_consistency_audit.md`. Structure:
