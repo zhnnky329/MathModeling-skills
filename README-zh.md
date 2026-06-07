@@ -12,14 +12,14 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-2E9E44">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-26-1A6FC4">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-28-1A6FC4">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-supported-E28E2C">
   <img alt="Codex" src="https://img.shields.io/badge/Codex-supported-E28E2C">
 </p>
 
 ---
 
-> 我自己跑数模写的一套 skill，被同样几个低级失误坑过太多次之后写的。一共 26 个 skill，6 个硬性门控，再加 3 个独立审计——审计说没问题论文才算能交。重点不是"自动化更多"，而是没有哪一步可以悄悄漏掉检查。论文里每个数字都要能追到一份冻结快照里。reviewer 必须在磁盘上留下文件。没有哪个 skill 能自己说一句"做完了"就过。
+> 我自己跑数模写的一套 skill，被同样几个低级失误坑过太多次之后写的。一共 28 个 skill，8 道门控（其中两道由你拍板），再加 3 个独立审计——审计说没问题论文才算能交。重点不是"自动化更多"，而是没有哪一步可以悄悄漏掉检查。论文里每个数字都要能追到一份冻结快照里。reviewer 必须在磁盘上留下文件。没有哪个 skill 能自己说一句"做完了"就过。
 >
 > 用了之后有 bug 或者想反馈跑比赛真实体验，邮件 **[zjzhang0424@gmail.com](mailto:zjzhang0424@gmail.com)**，或者直接提 issue。
 
@@ -39,6 +39,7 @@
 | | 一般的流程 | 这套 |
 |---|---|---|
 | 怎么往下走 | "这一步做完了，下一步" | 每个 gate 有明确通过条件，过不了，下游全部被标 stale |
+| 哪个方法、为什么 | AI 选好、连理由一起写了 | AI 摆候选 + 跑可行性；**你**来拍板、用自己的话写理由。空的或复制粘贴的理由过不了门（Gate G2.5） |
 | 从想法到代码 | 数学说得通就算过 | 每个候选方法必须有一段 ≤30 行的 PoC，在真实数据上跑出一个数（Gate G2） |
 | 代码审查 | 有人说"看着没问题" | 写一个磁盘上的 review 文件，列 ≥ 5 条具体检查过的项，带 file:line（Gate G3） |
 | 论文里的数字 | 每次从最新结果重新读 | 冻结到 `frozen_numbers.json` 里。改一个数字要先记录原因再重新冻结（Gate G4） |
@@ -68,7 +69,7 @@ workflow-orchestrator（session 开头 ping 环境）
 
 带星的两个 gate 是数模实际翻车最多的地方。G2 拦的是"会上说得头头是道，一到代码就跑不动"。G4 拦的是"半夜改了个 bug，论文里还是旧数字"。
 
-## 26 个 skill，按流程的位置分
+## 28 个 skill，按流程的位置分
 
 ### 第 1 阶段 — 把基本盘弄齐
 
@@ -86,7 +87,9 @@ workflow-orchestrator（session 开头 ping 环境）
 
 很多队伍是在截止前三天倒在这一步：会上看着特别优雅的方法，一上真实数据就跑不动，但已经来不及换了。
 
-- **`method-selector`** — 每个子问题出 2–4 个候选。**每个候选必须配一段可跑的 ≤ 30 行 PoC，在真实清洗数据上跑出一个具体的数。** PoC 失败的候选标 `[REJECTED]`，脚本自动挪到 `workspace/archived/`。产物：`methods/Qx/qx_method_candidates.md` + `methods/Qx/poc/*`。
+- **`method-selector`** — 每个子问题出 2–4 个候选。**每个候选必须配一段可跑的 ≤ 30 行 PoC，在真实清洗数据上跑出一个具体的数。** PoC 失败的候选标 `[REJECTED]`，脚本自动挪到 `workspace/archived/`。它**不替你选**——只把候选摆出来就停，由你拍板并写为什么（Gate G2.5）。产物：`methods/Qx/qx_method_candidates.md` + `methods/Qx/poc/*`。
+- **`decision-prompt-builder`** — 每个判断门，AI 先问你 2-3 个「只有你能答」的 trade-off 问题，再亮出它的建议——让你是在决策，不是盖章。这里和之后每个人类门都用。
+- **`modeler-decision-logger`** — 决策版的 `frozen_numbers.json`：把你拍板的决策收进一份 append-only 日志。论文里每句「为什么选 X」都要追溯到它，AI 不能偷偷替你重写理由。
 
 ### 第 3 阶段 — 写代码、然后真的审一遍（Gate G3）
 
@@ -138,7 +141,7 @@ mv .skills-tmp/docs ./skills-docs
 rm -rf .skills-tmp
 ```
 
-用 **Claude Code** 或 **Codex** 打开当前文件夹，26 个 skill 自动识别。第一句话：
+用 **Claude Code** 或 **Codex** 打开当前文件夹，28 个 skill 自动识别。第一句话：
 
 ```text
 读一下 CLAUDE.md，然后调用 workflow-orchestrator。我们的题目在 workspace/problem/，按 gate 顺序走，不要跳步。

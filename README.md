@@ -12,14 +12,14 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-2E9E44">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-26-1A6FC4">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-28-1A6FC4">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-supported-E28E2C">
   <img alt="Codex" src="https://img.shields.io/badge/Codex-supported-E28E2C">
 </p>
 
 ---
 
-> A set of skills I built for math-modeling contests after losing too many hours to the same kinds of mistakes. They sit behind 6 hard gates and a 3-auditor layer that has the last word on whether the paper is ready to hand in. The point isn't to automate more — it's that no step gets to quietly skip a check. Numbers in the paper trace back to a frozen snapshot. Reviewers leave a file on disk. No skill gets to say "done" on its own.
+> A set of skills I built for math-modeling contests after losing too many hours to the same kinds of mistakes. They sit behind a set of hard gates — two of which are yours to decide, not the AI's — and a 3-auditor layer that has the last word on whether the paper is ready to hand in. The point isn't to automate more — it's that no step gets to quietly skip a check. Numbers in the paper trace back to a frozen snapshot. Reviewers leave a file on disk. No skill gets to say "done" on its own.
 >
 > The split it's built on: **the AI owns the mechanical correctness; you own the modeling judgment.** It runs the PoCs, freezes the numbers, render-checks the figures, audits consistency. It does *not* choose your method, decide what a number means, or write the reason you chose what you chose — those are yours, and the gates fail on an empty or copy-pasted answer. It's an assistant, not a ghost-writer. (More on that in [What this isn't](#what-this-isnt).)
 >
@@ -89,7 +89,9 @@ Before any modeling happens, get the foundation right: what the problem is actua
 
 This is the boundary where most teams lose three days near the deadline. A method that looked great in a meeting turns out to be infeasible on the actual data, and now it's too late to switch.
 
-- **`method-selector`** — Proposes 2–4 candidates per subquestion. **Each one ships with a runnable ≤30-line PoC and a real number from running it on the cleaned data.** If the PoC fails, the candidate is marked `[REJECTED]` and its script moved to `workspace/archived/`. Outputs: `methods/Qx/qx_method_candidates.md` + `methods/Qx/poc/*`.
+- **`method-selector`** — Proposes 2–4 candidates per subquestion. **Each one ships with a runnable ≤30-line PoC and a real number from running it on the cleaned data.** If the PoC fails, the candidate is marked `[REJECTED]` and its script moved to `workspace/archived/`. It does **not** pick for you — it lays out the candidates and stops; you commit the choice and write why (Gate G2.5). Outputs: `methods/Qx/qx_method_candidates.md` + `methods/Qx/poc/*`.
+- **`decision-prompt-builder`** — At each judgment gate, asks you the 2–3 questions only you can answer (framed as trade-offs), before the AI shows its suggestion — so you decide, not rubber-stamp. Used here and at every later human gate.
+- **`modeler-decision-logger`** — The decision-side `frozen_numbers.json`: collects your committed decisions into one append-only log. Every "why we chose X" sentence in the paper traces back to it, so the AI can't quietly re-author your reasoning.
 
 ### Stage 3 — code, then review (Gate G3)
 
@@ -141,7 +143,7 @@ mv .skills-tmp/docs ./skills-docs
 rm -rf .skills-tmp
 ```
 
-Open the folder in **Claude Code** or **Codex** — the 26 skills get picked up automatically. First message:
+Open the folder in **Claude Code** or **Codex** — the 28 skills get picked up automatically. First message:
 
 ```text
 Read CLAUDE.md, then run workflow-orchestrator. Our contest problem is in workspace/problem/. Follow the gates in order and do not skip.
