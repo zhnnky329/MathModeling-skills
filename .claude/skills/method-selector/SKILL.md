@@ -99,7 +99,7 @@ Use or request:
    - Save scripts to `methods/Qx/poc/<candidate_id>_poc.py` (or `.m`).
    - Run each script and record the number / verdict directly into the candidate's section in `methods/Qx/qx_method_candidates.md` under "Feasibility number".
    - If a PoC fails (crashes, takes too long, produces infeasible output), mark the candidate `[REJECTED — PoC failed: <reason>]` and move the PoC script to `workspace/archived/<Qx>/<candidate>_REJECTED_poc/`. Do NOT keep failed PoCs in the main `methods/Qx/poc/` directory.
-   - Candidates that survive PoC become `[CHOSEN]` (if first-round priority high) or `[BACKUP]`. The candidate pool emitted from this skill must contain ≥ 1 `[CHOSEN]` candidate.
+   - Candidates that survive PoC are all tagged `[CANDIDATE — PoC PASS]`. The pool must contain ≥ 1 PoC-passing candidate. **Do not promote any of them to `[CHOSEN]` here** — that label is assigned only when the human commits a choice in the decision artifact (step 9 / Gate G2.5).
 
    The PoC philosophy: "30 lines that fail on real data" is worth more than "5 pages of math that look elegant". Surface infeasibility now, not at code generation.
 
@@ -108,17 +108,18 @@ Use or request:
    - Give data-driven, time-driven, or interpretability-driven reasons for rejection.
    - For methods rejected by PoC failure, the PoC script must be moved to `workspace/archived/<Qx>/<method>_REJECTED_poc/` (per step 3.5).
    - For methods rejected by analysis only (no PoC needed), record a one-line rejection in the rejected table and in `methods/Qx/qx_method_iteration_log.md`. No script to archive.
-   - This prevents the team from wasting time on obviously poor choices, and keeps the main `methods/Qx/poc/` directory containing only `[CHOSEN]` and `[BACKUP]` PoCs.
+   - This prevents the team from wasting time on obviously poor choices, and keeps the main `methods/Qx/poc/` directory containing only `[CANDIDATE]` (PoC-passed) PoCs. **Note: this skill never assigns `[CHOSEN]` — a candidate becomes the chosen method only when the human commits it in the decision artifact (step 9 / Gate G2.5). Until then, every PoC-passing candidate is `[CANDIDATE — PoC PASS]`.**
 
 5. Define baseline requirement.
    - Every subquestion must have at least one baseline method in its candidate pool.
    - The baseline should be the simplest meaningful reference method.
    - State clearly which candidate is the baseline.
 
-6. Recommend first-round execution strategy.
-   - State which 1-2 methods should be implemented and tested first.
+6. Suggest — do NOT decide — a first-round priority.
+   - You MAY state which 1-2 methods you would try first and why, as an **AI suggestion**. Label it clearly as a suggestion (`ai_suggestion`), not a verdict.
    - State under what conditions the team should try the other candidates.
    - State what the modeler should look for in round 1 experiment reports.
+   - Do NOT write "first-round priority: high" as if it were settled. The modeler decides which method to commit to in step 9. Your job is to lay out the trade-offs clearly enough that a human can choose, not to choose for them.
 
 7. Define expected artifacts per method.
    - Required input data.
@@ -130,6 +131,16 @@ Use or request:
    - Save per-subquestion files under `methods/Qx/`.
    - Each file is `methods/Qx/qx_method_candidates.md`.
    - Also produce a global pool summary at `methods/method_pool_summary.md` (optional, useful for overview).
+
+9. Emit the modeler decision artifact, then STOP (Gate G2.5).
+   - This is the load-bearing change: which method to build, and why, is the single most graded modeling judgment. The AI must not make it.
+   - Create `methods/Qx/decisions/method-selector_modeler_decision.md` following the **Human Decision Artifact Convention** in CLAUDE.md, with:
+     - `status: PENDING`, `decided_by: human` (left for the human to confirm), `decision_id: qx_method_choice`.
+     - `ai_suggestion`: your best single-line pick + the one reason for it. This is YOUR view, in its own field — it does not count as the decision.
+     - `choice`, every `rejected_alternatives[*].reason`, and the `## Modeler's rationale` body left as `<<<HUMAN>>>` sentinels for the modeler to fill.
+     - `evidence_refs`: point at the real PoC result files / experiment evidence so the human's rationale can cite a concrete number.
+   - Then STOP and tell the modeler exactly what to fill in. Do NOT proceed to data cleaning or code planning. The orchestrator's Gate G2.5 keeps `code_generation_allowed_Qx = false` until this artifact's `status` is `DECIDED` with a non-empty, non-copied human rationale.
+   - In **learning mode** (if `planning/session_config.json` says so): withhold `ai_suggestion` until after the human writes their rationale, to avoid anchoring. In **speed mode**: show `ai_suggestion` alongside. Either way the human rationale field, its floor, and the copy/evidence checks are identical.
 
 # Outputs
 
@@ -149,9 +160,11 @@ Each file must include:
 - Candidate method pool (2-4 methods).
 - Rejected methods and reasons.
 - Baseline designation.
-- First-round execution recommendation.
+- First-round priority **as an AI suggestion** (not a verdict).
 - Data requirements.
 - Evaluation criteria per method.
+
+Plus, separately, the decision artifact `methods/Qx/decisions/method-selector_modeler_decision.md` (PENDING, awaiting the human) — see step 9.
 
 # Output format
 
@@ -170,7 +183,7 @@ Each `methods/Qx/qx_method_candidates.md` must follow this structure:
 
 ## 2. Candidate Method Pool
 
-### Candidate M1: [Short Descriptive Name]  [CHOSEN | BACKUP | REJECTED]
+### Candidate M1: [Short Descriptive Name]  [CANDIDATE — PoC PASS | REJECTED]
 
 - **Math idea**: [2-3 sentences explaining the core mathematical approach]
 - **Why it fits this subquestion**: [1-2 sentences]
@@ -214,12 +227,13 @@ Each `methods/Qx/qx_method_candidates.md` must follow this structure:
 - **Baseline**: [which candidate serves as baseline]
 - **Why this baseline**: [reason — simplest, most transparent, easiest to implement]
 
-## 5. First-Round Execution Recommendation
+## 5. First-Round Priority (AI suggestion — the modeler decides in the decision artifact)
 
-- **Implement first**: [1-2 method names]
-- **Reason**: [why these should be tried first]
+- **AI would try first**: [1-2 method names] — *suggestion only, not a verdict*
+- **Reason for the suggestion**: [why these look most promising to try first]
 - **When to try others**: [conditions under which remaining candidates should be tested]
 - **What to look for in round 1**: [what the modeler should check in the experiment report]
+- **Decision pending**: the actual first-round choice is recorded by the modeler in `methods/Qx/decisions/method-selector_modeler_decision.md` (Gate G2.5). No candidate is `[CHOSEN]` until the human commits it there.
 
 ## 6. Cross-Method Comparison Matrix
 
@@ -405,11 +419,10 @@ Avoid: decorative figures without modeling purpose, causal claims from correlati
 - Every candidate must specify what the programmer should output and how to evaluate it.
 - **PoC is mandatory** — every candidate must have a runnable ≤ 30-line PoC + a feasibility number. A candidate without a PoC is not a candidate; it's a hypothesis. Gate G2 blocks code generation on PoC absence.
 - **Before generating the pool, ask one most-load-bearing question** to align granularity with the modeler (Workflow step 0). Do not default-produce 3 versions and get them all rejected.
-- **PoC failures must be archived**, not buried. Move failed PoC scripts to `workspace/archived/<Qx>/<candidate>_REJECTED_poc/` and mark the candidate `[REJECTED]` with a one-line reason. The main `methods/Qx/poc/` directory contains only `[CHOSEN]` and `[BACKUP]` PoCs.
+- **PoC failures must be archived**, not buried. Move failed PoC scripts to `workspace/archived/<Qx>/<candidate>_REJECTED_poc/` and mark the candidate `[REJECTED]` with a one-line reason. The main `methods/Qx/poc/` directory contains only `[CANDIDATE]` (PoC-passed) PoCs.
 - Unsuitable methods must be explicitly rejected with reasons.
-- First-round priority must be stated — the team should know what to implement first.
-- Do not select the final method. This is the candidate pool, not the final choice.
-- Final method selection happens AFTER experiments, by the modeler reviewing experiment reports.
+- First-round priority is stated **only as an AI suggestion** — never as a decided verdict, never `[CHOSEN]`.
+- **Do not select ANY method — not the final one, not the first-round one.** This skill emits PoC-passed candidates + a suggestion + a PENDING decision artifact. The human commits the choice at Gate G2.5; only then does a candidate become `[CHOSEN]`. Do not infer the choice from your own suggestion, and do not fill the human rationale field.
 - Do not generate code.
 - Do not clean data.
 - Do not write paper text.
@@ -424,12 +437,13 @@ Before handing off, verify:
 - Every subquestion has 2-4 candidate methods or an explicit justification for fewer.
 - Every subquestion has a baseline designated.
 - Every candidate has: math idea, strengths, weaknesses, expected outputs, evaluation criteria, difficulty, priority, **PoC script path, feasibility number, PoC verdict**.
-- At least one candidate is marked `[CHOSEN]` with a PoC PASS verdict per subquestion.
+- At least one candidate passed its PoC and is marked `[CANDIDATE — PoC PASS]` per subquestion. (No `[CHOSEN]` here — that is the human's call at G2.5.)
 - All `[REJECTED]` PoCs have been moved to `workspace/archived/`.
 - Unsuitable methods are explicitly listed and rejected with reasons.
-- First-round execution recommendation is clear.
+- First-round priority is presented as an AI suggestion, clearly not a verdict.
 - Cross-method comparison matrix is filled for all criteria.
-- The next skill is `data-auditor-cleaner` (or `workflow-orchestrator` if data is not needed).
+- **The decision artifact `methods/Qx/decisions/method-selector_modeler_decision.md` exists with `status: PENDING`**, `ai_suggestion` filled, and `choice` / rationale left as `<<<HUMAN>>>` for the modeler.
+- The next skill is `data-auditor-cleaner` for data prep, but **Gate G2.5 blocks code generation** until the modeler fills the decision artifact (`status: DECIDED`). Hand back to the modeler, not forward to code planning.
 
 # Failure modes
 

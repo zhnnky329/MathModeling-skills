@@ -1,5 +1,6 @@
 # Core Philosophy
 
+- **The AI owns mechanical correctness; the human owns modeling judgment.** Assistant for the engineering discipline, not a solver or paper-writer. AI keeps numbers traceable, runs PoCs, audits, render-checks, enforces gates. The human chooses the method and says why, decides what a number means, judges results, frames assumptions, authorizes submission. A skill must never originate, on the human's behalf, a judgment a judge would grade.
 - Start from goals, objects, constraints, data, outputs, variables, relationships, and checkable conclusions.
 - Do not start from model names or favorite techniques.
 - Separate assumptions, observations, derivations, and validated conclusions.
@@ -23,6 +24,7 @@ Gates are not stages. A stage is "where I am"; a gate is "what I must satisfy to
 
 - **G1 PROBLEM_PARSED**: parse + classification exist.
 - **G2 METHOD_VALIDATED** (load-bearing — method→code boundary): each candidate has a ≤30-line PoC + feasibility number. No PoC ⇒ not validated.
+- **G2.5 METHOD_CHOSEN_BY_HUMAN** (human-decision gate, pilot): `methods/Qx/decisions/method-selector_modeler_decision.md` is `DECIDED` by the human with a non-empty, non-copied, evidence-citing rationale. `method-selector` only emits `[CANDIDATE — PoC PASS]` + an AI suggestion; the human commits the choice. `code_generation_allowed_Qx = G2 ∧ G2.5`. The orchestrator never fills the decision artifact or infers the choice from the AI suggestion.
 - **G3 CODE_REVIEWED**: reviewer artifact exists at `code/Qx/reviews/qx_<lang>_review.md` with ≥ 5 explicit pass items.
 - **G4 RESULTS_FROZEN** (load-bearing — results→paper boundary): `results/Qx/reports/frozen_numbers.json` exists and is newer than every source file; solution package sources all numbers from it.
 - **G5 PAPER_SECTION_READY**: section meets word-count floor; every numerical result has ≥ 3 discussion dimensions; every figure passes render-check.

@@ -1,5 +1,6 @@
 # Core Philosophy
 
+- **The AI owns mechanical correctness; the human owns modeling judgment.** This is an assistant for the engineering discipline around a contest, not a solver and not a paper-writer. The AI keeps numbers traceable, runs PoCs, audits consistency, render-checks figures, enforces gates — the bookkeeping a machine should do. The human chooses the method and says why, decides what a number means, judges whether a result is good, frames the assumptions, and authorizes submission — the judgment a contest grades and a student must learn. A skill must never originate, on the human's behalf, a judgment a judge would grade.
 - Start from goals, objects, constraints, data, outputs, variables, relationships, and checkable conclusions.
 - Do not start from model names.
 - Separate assumptions from validated conclusions at every stage.
@@ -22,6 +23,7 @@ Gates are not stages. A stage is "where I am"; a gate is "what I must satisfy to
 
 - **G1 PROBLEM_PARSED**: parse + classification exist.
 - **G2 METHOD_VALIDATED** (load-bearing — method→code boundary): each candidate has a ≤30-line PoC + feasibility number. No PoC ⇒ not validated.
+- **G2.5 METHOD_CHOSEN_BY_HUMAN** (human-decision gate, pilot): `methods/Qx/decisions/method-selector_modeler_decision.md` is `DECIDED` by the human with a non-empty, non-copied, evidence-citing rationale. The AI suggests; the human chooses. `code_generation_allowed_Qx = G2 ∧ G2.5`.
 - **G3 CODE_REVIEWED**: reviewer artifact exists at `code/Qx/reviews/qx_<lang>_review.md` with ≥ 5 explicit pass items.
 - **G4 RESULTS_FROZEN** (load-bearing — results→paper boundary): `results/Qx/reports/frozen_numbers.json` exists and is newer than every source file; solution package sources all numbers from it.
 - **G5 PAPER_SECTION_READY**: section meets word-count floor; every numerical result has ≥ 3 discussion dimensions; every figure passes render-check.
@@ -60,6 +62,48 @@ Numbers flow code → results → paper. Without a freeze layer, a bug fix in co
   3. **重冻结** — re-invoke `solution-package-builder` to regenerate `frozen_numbers.json` with a new `frozen_at` timestamp.
 - Never edit `frozen_numbers.json` by hand. Never edit it without the change log entry.
 - `consistency-auditor` checks freeze staleness: if any `code/Qx/*` file's mtime is newer than `frozen_at`, the snapshot is STALE and the paper claim is suspect.
+
+# Human Decision Artifact Convention
+
+> Status: DRAFT — schema is being validated on a `method-selector` pilot (Gate G2.5). Field names and floors may change before this convention is generalized to the other judgment-bearing skills. Parallel to the Frozen Numbers Convention: just as numbers are frozen so a bug fix can't silently shift the paper, modeling *judgments* are pinned to a human-authored artifact so the AI can't silently author what a judge grades.
+
+A judgment-bearing skill (currently `method-selector`; later `result-report-generator`, `robustness-checker`, `final-method-explainer`, `solution-package-builder`) must NOT originate the graded verdict (which method, why, `[CHOSEN]`/`[REJECTED]`, confidence, what a number means). It lays out evidence + an AI suggestion, then STOPS and requires a human decision artifact before its gate passes.
+
+**Path:** `methods/Qx/decisions/<skill>_modeler_decision.md` (global-scope skills use `planning/decisions/`).
+
+**Format:** machine-readable front-matter (the orchestrator / `completeness-auditor` parse this) + a human-authored prose body.
+
+```markdown
+---
+schema_version: 1
+skill: method-selector
+scope: Q2
+decision_id: q2_method_choice      # stable id; referenced by frozen_numbers.json / audits
+status: DECIDED                    # PENDING => gate FAILS
+decided_by: human                  # "ai" / "auto" => gate FAILS
+decided_at: 2026-06-06T14:20:00+08:00
+ai_suggestion: "M2 entropy-TOPSIS — highest PoC feasibility"   # AI's pick, kept in its OWN field
+choice: "M2"
+rejected_alternatives:
+  - { id: "M1", reason: "<<<HUMAN>>>" }
+  - { id: "M3", reason: "<<<HUMAN>>>" }
+confidence: medium
+evidence_refs:
+  - "methods/Q2/poc/m2_poc_result.txt"     # must resolve to a real file on disk
+---
+
+## Modeler's rationale  <!-- human-authored; the AI must NOT write this -->
+<<<HUMAN: in your own words, why this method over the rejected ones, tied to a specific
+number or criterion from the evidence.>>>
+```
+
+**What is enforced (and honest limits):**
+- **FAIL by default.** Passes only if `status: DECIDED` AND `decided_by: human` AND every mandatory field is present, over its floor, and contains no sentinel (`<<<`, `TODO`, `TBD`, `待补充`, `...`, empty).
+- **Anti-copy = near-verbatim only.** The human rationale must not be a near-exact copy of `ai_suggestion` (normalized-whitespace equality / tiny edit distance). Fuzzy similarity (Jaccard/trigram) is NOT a hard gate — Chinese technical paraphrase reuses terms legitimately; fuzzy scores go to a provenance ledger as a WARN signal, to be calibrated against real samples later. Formulas and symbols from `symbol_table.md` are exempt from copy-checking.
+- **Evidence citation is the strong lever.** The rationale must reference a concrete token from the evidence (a number, a candidate id, a symbol). This is what actually forces engagement — a char floor only forces length. Keep the char floor low (enough for one sentence with a number) and lean on the evidence-citation requirement.
+- **Cannot prove human authorship.** A determined user can paraphrase AI text. The gate makes rubber-stamping a dead end and leaves a visible engagement trail; it does not claim authorship proof.
+
+**Recovery after a FAIL:** edit the artifact → `status` flips to DECIDED, `decided_at` refreshes → next orchestrator run re-checks the file (stateless) → on pass, the gate's human sub-flag flips true. Downstream DIRTY artifacts are NOT auto-trusted: `consistency-auditor` must re-run incrementally for that Qx (the Change-propagation rule P1) before DIRTY clears. If the edited decision sat behind a frozen number, walk `解冻 → 修改 → 重冻结`; the decision record appends a new entry with `supersedes`, never overwrites.
 
 # Rejected-Method Archival Convention
 

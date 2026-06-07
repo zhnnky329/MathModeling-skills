@@ -130,6 +130,18 @@ This is the method→code boundary. Most "漂亮方案到代码阶段才崩" iss
   - Every candidate has a baseline designation or one of the candidates IS the baseline.
 - **fail_fallback**: Route to `method-selector` to add the missing PoC. If PoC feasibility fails for a candidate, mark it `[REJECTED]`, move the PoC script to `workspace/archived/`, and route back to `method-selector` for an alternative.
 
+## Gate G2.5: METHOD_CHOSEN_BY_HUMAN  (NEW — human-decision gate at the method→code boundary)
+PoC proves a method is *feasible*; it does not prove it is the *right* choice. "Which method, and why, over the alternatives" is the single most graded modeling judgment — the AI must not make it. This is the pilot of the Human Decision Artifact Convention (see CLAUDE.md). It is a **two-layer gate**: the mechanical layer is G2 (above); this is its human layer.
+- **enter_condition**: G2 passed — candidates carry `[CANDIDATE — PoC PASS]`, no `[CHOSEN]` yet; PoC failures already archived.
+- **pass_criteria** (all checked mechanically against the decision artifact, no NLP needed):
+  - `methods/Qx/decisions/method-selector_modeler_decision.md` exists with `status: DECIDED` and `decided_by: human`.
+  - `choice` names a real `[CANDIDATE]` id from the pool.
+  - Every `rejected_alternatives[*].reason` and the `## Modeler's rationale` body are non-empty, over the char floor, and contain no sentinel (`<<<`, `TODO`, `待补充`, `...`, empty).
+  - The rationale is NOT a near-verbatim copy of `ai_suggestion` (normalized-whitespace equality / tiny edit distance; fuzzy similarity is a ledger WARN, not a gate FAIL — see CLAUDE.md).
+  - The rationale references at least one concrete token from `evidence_refs` (a number, a candidate id, a symbol).
+- **fail_fallback**: keep `code_generation_allowed_Qx = false`. Route back to the modeler (NOT to a skill) with the exact missing/under-floor field. **The orchestrator must never set this gate's pass itself, never auto-fill the decision artifact, and never infer the choice from `method-selector`'s `ai_suggestion`.**
+- **encoding**: `code_generation_allowed_Qx = G2_mechanical_pass ∧ G2.5_human_pass`. `model-code-analyzer` and the code generators stay blocked until both are true. While blocked, the AI MAY run non-judgment prep (data cleaning, staging) — it just cannot generate the model code.
+
 ## Gate G3: CODE_REVIEWED
 - **enter_condition**: G2 passed; `code/Qx/` (Python) or `code/matlab/Qx/` (MATLAB) has scripts; experiments ran.
 - **pass_criteria**:
@@ -170,14 +182,18 @@ This is the independent-audit gate. No single skill's "完成" claim can bypass 
 ## Gate dependency graph
 
 ```
-G1 → G2 → G3 → G4 → G5 → G6 → final assembly
-                              ↑
-                              consistency-auditor ┐
-                              completeness-auditor├─ all must PASS
-                              quality-assurance-auditor ┘
+G1 → G2 → G2.5★ → G3 → G4 → G5 → G6 → final assembly
+          (human)                    ↑
+                                     consistency-auditor ┐
+                                     completeness-auditor├─ all must PASS
+                                     quality-assurance-auditor ┘
 ```
 
-A failure at any gate marks all downstream stages DIRTY. Re-passing a gate after repair requires re-running the gate's pass_criteria check from scratch, not trusting cached "✅" marks.
+★ = human-decision gate. G2.5 is the first of these (pilot). It blocks `code_generation_allowed_Qx` until the modeler commits the method choice. The mechanical gates (G1–G6) stay AI-owned; the human gate adds a separate file-existence-and-content check, enforced the same way as `≥5-pass-item` checks.
+
+**The orchestrator never sets a human-gate pass itself.** It never fills a decision artifact, never infers a human verdict from an AI suggestion, and treats a missing/PENDING/under-floor decision artifact exactly like a missing mechanical artifact: the downstream `*_allowed` flag stays false.
+
+A failure at any gate marks all downstream stages DIRTY. Re-passing a gate after repair requires re-running the gate's pass_criteria check from scratch, not trusting cached "✅" marks. After a human-gate FAIL, recovery is: the modeler edits the decision artifact → `status` flips to DECIDED → next orchestrator run re-checks the file → on pass, the human sub-flag flips true; downstream DIRTY clears only after `consistency-auditor` re-runs incrementally (Change-propagation rule P1).
 
 # Per-Question State Machine
 
@@ -538,6 +554,7 @@ If a JSON block is too rigid for the situation, use a concise Markdown report wi
 - Do not approve final delivery without the full audit layer passing (Gate G6 — consistency + completeness + QA all green).
 - Do not treat any one auditor's "✅" as sufficient for assembly — the three are orthogonal.
 - Run the session-start environment ping in every new session before doing anything else.
+- **Never set a human-decision gate's pass yourself** (G2.5 is the first such gate). Never fill, edit, or auto-populate a `*_modeler_decision.md` artifact; never infer a human's method choice from the AI's `ai_suggestion`. A PENDING or under-floor decision artifact blocks the downstream `*_allowed` flag exactly like a missing mechanical artifact.
 - Enforce the three critical rules at every handoff.
 - Track per-question status separately — different subquestions are at different stages.
 - Update the progress dashboard whenever the state changes.
