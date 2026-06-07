@@ -65,6 +65,10 @@ Numbers flow code → results → paper. Without a freeze layer, a bug fix in co
 - Never edit `frozen_numbers.json` by hand.
 - `consistency-auditor` checks freeze staleness: if any `code/Qx/*` file's mtime is newer than `frozen_at`, the snapshot is STALE.
 
+# Learning / Speed Mode Convention
+
+`planning/session_config.json` holds `{ "mode": "learning" | "speed" }` (default `learning`). The toggle changes scaffolding density and anchor-timing ONLY — never a char floor, copy-detection, or any gate. `decision-prompt-builder` asks 2-3 trade-off questions only the human can answer (full in learning, terse in speed); in learning mode the AI's `ai_suggestion` is withheld until the human writes their rationale (anti-anchoring), shown alongside in speed. `modeler-decision-logger` records `captured_in_mode`. Speed must not be abused to skip thinking — `completeness-auditor` still enforces the floors.
+
 # Rejected-Method Archival Convention
 
 Failed or eliminated candidate methods do not stay in the main code tree. Once `result-report-generator` or `method-selector` marks a method as `[REJECTED]`:

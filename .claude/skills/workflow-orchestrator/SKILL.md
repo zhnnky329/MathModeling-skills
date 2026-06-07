@@ -564,7 +564,8 @@ If a JSON block is too rigid for the situation, use a concise Markdown report wi
 - Do not approve final delivery without the full audit layer passing (Gate G6 — consistency + completeness + QA all green).
 - Do not treat any one auditor's "✅" as sufficient for assembly — the three are orthogonal.
 - Run the session-start environment ping in every new session before doing anything else.
-- **Never set a human-decision gate's pass yourself** (G2.5 is the first such gate). Never fill, edit, or auto-populate a `*_modeler_decision.md` artifact; never infer a human's method choice from the AI's `ai_suggestion`. A PENDING or under-floor decision artifact blocks the downstream `*_allowed` flag exactly like a missing mechanical artifact.
+- **Never set a human-decision gate's pass yourself** (G2.5 and G4.5 are these gates). Never fill, edit, or auto-populate a `*_modeler_decision.md` artifact; never infer a human's verdict from the AI's `ai_suggestion`. A PENDING or under-floor decision artifact (or a surviving B-layer sentinel) blocks the downstream `*_allowed` flag exactly like a missing mechanical artifact.
+- **At each human-decision gate, route through `decision-prompt-builder` first** — it emits the 2-3 questions only the human can answer, before the judgment skill shows its suggestion. Read `mode` from `planning/session_config.json` (default `learning`) and pass it in the handoff context: in `learning` mode the judgment skill must withhold its `ai_suggestion` until the human has answered (anti-anchoring); in `speed` mode it may show the suggestion alongside. The mode changes scaffolding only — it never relaxes a floor or a gate.
 - Enforce the three critical rules at every handoff.
 - Track per-question status separately — different subquestions are at different stages.
 - Update the progress dashboard whenever the state changes.

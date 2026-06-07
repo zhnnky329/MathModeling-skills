@@ -115,6 +115,20 @@ Contests permit AI **assistance** and forbid AI **doing the modeling for the tea
 - Granularity follows a `contest_profile` (`COMAP` | `CUMCM` | `OTHER`): COMAP gets the full AI-use report formatted to the contest's spec; CUMCM/strict gets an internal warning ("this contest may not permit AI assistance — verify; this disclosure is for your records / integrity pledge, not necessarily for submission") rather than auto-inserting an appendix into a paper for a contest with no disclosure channel.
 - **No contest's AI policy is encoded here as authoritative.** AI rules change every cycle and differ sharply (COMAP disclose-and-allow vs CUMCM originality-first). Defaults target the strictest plausible interpretation so a workflow compliant under the loosest contest is also compliant under the strictest. The team must read their contest's current-year official rules; the final compliance call is the human's.
 
+# Learning / Speed Mode Convention
+
+Two target users have opposite optimal friction: a student learning modeling wants scaffolding and guiding questions; an experienced team under a 72–96h deadline wants terseness. A single setting serves both badly, so the workspace carries a mode.
+
+- `planning/session_config.json` holds `{ "mode": "learning" | "speed" }`, default `learning` for a fresh workspace, settable per session.
+- **The toggle NEVER weakens a gate.** Both modes require the same human-authored decision-log records, the same char floors, the same copy-detection, and all PRESERVE-list discipline (freeze, render-check, ≥5 pass items, three-auditor G6). The redesign's whole point — the human must supply the judgment — holds identically in both modes. Speed mode does not exempt the human; it only compresses the *prompting*.
+- What the mode changes (scaffolding only):
+  - `decision-prompt-builder` verbosity: learning = full 2-3 trade-off questions; speed = one terse question.
+  - `socratic-method-coach`: active in learning, disabled in speed.
+  - **Anchor timing**: in learning mode the AI's `ai_suggestion` is withheld until after the human writes their rationale (anti-anchoring); in speed mode it's shown alongside.
+  - Explanatory prose density and the post-decision reflection prompt.
+- `modeler-decision-logger` records `captured_in_mode` per decision, so a post-contest review can flag which decisions were made on autopilot (speed) vs deliberated (learning).
+- Guard: when `mode == speed`, `completeness-auditor` still double-checks the rationale floors were met — speed must not be abused to skip thinking.
+
 # Rejected-Method Archival Convention
 
 Failed or eliminated candidate methods do not stay in the main code tree. Once `result-report-generator` or `method-selector` marks a method as `[REJECTED]`:
@@ -175,7 +189,7 @@ Minimum 7 files per subquestion before "Ready for Writer":
 - results/Qx/reports/qx_solution_package_for_writer.md
 - results/Qx/reports/frozen_numbers.json (immutable freeze)
 
-# Full Skill List (27 skills)
+# Full Skill List (28 skills)
 
 | Skill | Role |
 |-------|------|
@@ -185,6 +199,7 @@ Minimum 7 files per subquestion before "Ready for Writer":
 | related-paper-analyzer | 论文分析：从真实文献提炼方法，不编造引用 |
 | method-selector | 候选方法池：每小问 2-4 个候选 + 每个候选附 ≤30 行 PoC + 可行性数字；只发 `[CANDIDATE]` 不发 `[CHOSEN]`，方法选择交人(G2.5) |
 | **modeler-decision-logger** | **决策版 frozen_numbers：收集/盖戳/冻结人写决策成单一 append-only 日志；论文叙述从它转述，赛后当复盘日记。不产决策。** |
+| **decision-prompt-builder** | **判断前抛 2-3 个「只有人能答」的 trade-off 问题，拒绝自答；learning 模式藏 AI 建议防锚定，speed 模式并排显示。把「AI 问、人答」做成每个判断门的可复用原语。** |
 | symbol-table-builder | 全局符号表构建：统一所有小问的符号约定 |
 | model-assumptions-builder | 全局模型假设：区分必要/简化，评估影响 |
 | data-auditor-cleaner | 数据审计清洗：副本操作，不碰原始数据 |
