@@ -53,10 +53,12 @@ workflow-orchestrator（session 开头 ping 环境）
  ▼  problem-parser → problem-classifier → related-paper-analyzer       [ G1: PROBLEM_PARSED ]
  ▼  symbol-table-builder + model-assumptions-builder + data-auditor-cleaner
  ▼  method-selector   ── 每候选附 ≤30 行 PoC + 可行性数字              [ G2: METHOD_VALIDATED  ★ ]
+ ▼  ── 你来拍板选哪个方法 + 写为什么 ──────────────────────────────  [ G2.5: 由你拍板 👤 ]
  ▼  model-code-analyzer → {python,matlab}-model-code-generator
  ▼  code-reviewer（router）→ {python,matlab}-code-reviewer            [ G3: CODE_REVIEWED ]
  ▼  result-report-generator（[REJECTED] 自动归档）
  ▼  robustness-checker → final-method-explainer
+ ▼  ── 你来判定结果好不好 + 稳不稳健 ────────────────────────────  [ G4.5: 由你判定 👤 ]
  ▼  figure-table-planner → math-figure-generator（render_check）
  ▼  solution-package-builder ── 生成 frozen_numbers.json              [ G4: RESULTS_FROZEN   ★ ]
  ▼  paper-section-writer（字数下限 + 每数值 ≥ 3 类讨论）                [ G5: PAPER_SECTION_READY ]
@@ -67,7 +69,7 @@ workflow-orchestrator（session 开头 ping 环境）
  ▼  终稿组装
 ```
 
-带星的两个 gate 是数模实际翻车最多的地方。G2 拦的是"会上说得头头是道，一到代码就跑不动"。G4 拦的是"半夜改了个 bug，论文里还是旧数字"。
+★ = 数模翻车最多的两处：G2 拦"会上说得头头是道、一到代码就跑不动"，G4 拦"半夜改了个 bug、论文里还是旧数字"。👤 = 两个属于**你**而不是 AI 的门——选方法（G2.5）和判结果（G4.5），空的或复制粘贴的答案都过不了。
 
 ## 28 个 skill，按流程的位置分
 
@@ -132,7 +134,7 @@ workflow-orchestrator（session 开头 ping 环境）
 
 ```bash
 # 在将要存 methods/ code/ results/ paper/ 的文件夹里
-git clone https://github.com/KyrieZhang329/MathModeling-skills.git .skills-tmp
+git clone https://github.com/zhnnky329/MathModeling-skills.git .skills-tmp
 mv .skills-tmp/.claude .claude
 mv .skills-tmp/.codex .codex
 mv .skills-tmp/CLAUDE.md .
@@ -150,7 +152,7 @@ rm -rf .skills-tmp
 ### 方案 B — 全局装到 Claude Code
 
 ```bash
-git clone https://github.com/KyrieZhang329/MathModeling-skills.git
+git clone https://github.com/zhnnky329/MathModeling-skills.git
 cd MathModeling-skills
 
 mkdir -p ~/.claude/skills
@@ -164,7 +166,7 @@ done
 ### 方案 C — 全局装到 Codex
 
 ```bash
-git clone https://github.com/KyrieZhang329/MathModeling-skills.git
+git clone https://github.com/zhnnky329/MathModeling-skills.git
 cd MathModeling-skills
 
 mkdir -p ~/.codex/skills

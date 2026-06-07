@@ -55,10 +55,12 @@ workflow-orchestrator (env ping at session start)
  ▼  problem-parser → problem-classifier → related-paper-analyzer       [ G1: PROBLEM_PARSED ]
  ▼  symbol-table-builder + model-assumptions-builder + data-auditor-cleaner
  ▼  method-selector   ── each candidate ships ≤30-line PoC + number    [ G2: METHOD_VALIDATED  ★ ]
+ ▼  ── YOU commit the method choice + write why ──────────────────────  [ G2.5: CHOSEN_BY_HUMAN 👤 ]
  ▼  model-code-analyzer → {python,matlab}-model-code-generator
  ▼  code-reviewer (router) → {python,matlab}-code-reviewer             [ G3: CODE_REVIEWED ]
  ▼  result-report-generator ([REJECTED] archived)
  ▼  robustness-checker → final-method-explainer
+ ▼  ── YOU render the result + stability verdicts ────────────────────  [ G4.5: JUDGED_BY_HUMAN 👤 ]
  ▼  figure-table-planner → math-figure-generator (render_check)
  ▼  solution-package-builder ── emits frozen_numbers.json              [ G4: RESULTS_FROZEN   ★ ]
  ▼  paper-section-writer (word floor + ≥3 discussion dims per number)  [ G5: PAPER_SECTION_READY ]
@@ -69,7 +71,7 @@ workflow-orchestrator (env ping at session start)
  ▼  final assembly
 ```
 
-The two starred gates are where most contest pipelines actually fall apart. G2 catches the case where a method looked elegant in a discussion but doesn't work on the real data. G4 catches the case where someone fixed a bug late at night and forgot the paper still quotes the old number.
+★ = where most pipelines fall apart: G2 catches a method that looked elegant in a meeting but doesn't run on the real data; G4 catches a late-night bug fix that left the paper quoting the old number. 👤 = the two gates that are *yours*, not the AI's — the method choice (G2.5) and the result verdict (G4.5) can't pass on an empty or copy-pasted answer.
 
 ## The skills, by where they sit in the pipeline
 
@@ -134,7 +136,7 @@ Most people clone this into the folder where they'll do the actual contest work,
 
 ```bash
 # inside the folder that will hold methods/ code/ results/ paper/ ...
-git clone https://github.com/KyrieZhang329/MathModeling-skills.git .skills-tmp
+git clone https://github.com/zhnnky329/MathModeling-skills.git .skills-tmp
 mv .skills-tmp/.claude .claude
 mv .skills-tmp/.codex .codex
 mv .skills-tmp/CLAUDE.md .
@@ -152,7 +154,7 @@ Read CLAUDE.md, then run workflow-orchestrator. Our contest problem is in worksp
 ### Option B — install globally for Claude Code
 
 ```bash
-git clone https://github.com/KyrieZhang329/MathModeling-skills.git
+git clone https://github.com/zhnnky329/MathModeling-skills.git
 cd MathModeling-skills
 
 mkdir -p ~/.claude/skills
@@ -166,7 +168,7 @@ Restart Claude Code. The skills are available in any project now. You still want
 ### Option C — install globally for Codex
 
 ```bash
-git clone https://github.com/KyrieZhang329/MathModeling-skills.git
+git clone https://github.com/zhnnky329/MathModeling-skills.git
 cd MathModeling-skills
 
 mkdir -p ~/.codex/skills
