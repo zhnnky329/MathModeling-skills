@@ -19,7 +19,9 @@
 
 ---
 
-> A set of skills I built for math-modeling contests after losing too many hours to the same kinds of mistakes. There are 26 of them, sitting behind 6 hard gates and a 3-auditor layer that has the last word on whether the paper is ready to hand in. The point isn't to automate more — it's that no step gets to quietly skip a check. Numbers in the paper have to trace back to a frozen snapshot. Reviewers have to leave a file on disk. No skill gets to say "done" on its own.
+> A set of skills I built for math-modeling contests after losing too many hours to the same kinds of mistakes. They sit behind 6 hard gates and a 3-auditor layer that has the last word on whether the paper is ready to hand in. The point isn't to automate more — it's that no step gets to quietly skip a check. Numbers in the paper trace back to a frozen snapshot. Reviewers leave a file on disk. No skill gets to say "done" on its own.
+>
+> The split it's built on: **the AI owns the mechanical correctness; you own the modeling judgment.** It runs the PoCs, freezes the numbers, render-checks the figures, audits consistency. It does *not* choose your method, decide what a number means, or write the reason you chose what you chose — those are yours, and the gates fail on an empty or copy-pasted answer. It's an assistant, not a ghost-writer. (More on that in [What this isn't](#what-this-isnt).)
 >
 > If you find a bug or want to tell me how it went in a real contest, drop me a line at **[zjzhang0424@gmail.com](mailto:zjzhang0424@gmail.com)** — or open an issue.
 
@@ -39,6 +41,7 @@ These are workflow problems, not modeling problems. The skills here are arranged
 | | A typical pipeline | This one |
 |---|---|---|
 | How you move on | "this stage is done, next" | Each gate has an explicit pass condition. Fail it and everything downstream gets marked stale. |
+| Which method, and why | The AI picks and writes the justification | The AI lays out candidates and runs the feasibility checks; **you** commit the choice and write the reason, in your own words. The gate fails on an empty or copy-pasted rationale (Gate G2.5). |
 | From idea to code | A method is accepted if the math looks right | Each candidate ships with a ≤30-line PoC and a real number from running it on the actual data (Gate G2) |
 | Code review | Someone says "looks fine" | A review file on disk with ≥ 5 specific things that were checked, file:line cited (Gate G3) |
 | Numbers in the paper | Re-read from the latest results each time | Frozen into `frozen_numbers.json`. Changing one means logging the change and re-freezing (Gate G4) |
@@ -232,7 +235,10 @@ A few hard rules: `data_raw/` is read-only. Every paper number lives in `frozen_
 - It won't write a number into the paper before some script has produced it.
 - It won't claim a model is better than a baseline without a baseline and a robustness check actually existing.
 - It doesn't touch your raw data.
+- **It's not a ghost-writer.** The things a judge actually grades and a student actually needs to learn — which method and why, what the numbers mean, how you framed the assumptions, what your contribution is — come from you. The AI drafts the scaffolding around them and marks every judgment span as needing your input; the gates won't pass on an empty box or text copy-pasted from the AI's own suggestion. If you try to let it do all of it, the pipeline blocks before submission.
 - It doesn't replace your judgment. You still make the modeling calls.
+
+> **⚠️ Your contest's rules are yours to check.** AI-use policies differ sharply between contests and change every year — COMAP (MCM/ICM) currently allows disclosed AI assistance; CUMCM and several Chinese contests are originality-first and may not permit it at all. This repo encodes no contest's authoritative policy; its defaults aim at the strictest plausible reading. Every run can emit an `ai_use_disclosure.md` recording what was AI-drafted vs human-authored, so you can disclose honestly where required. Read your contest's current official rules before you rely on this — the final compliance call is yours.
 
 ## Docs you might actually need
 

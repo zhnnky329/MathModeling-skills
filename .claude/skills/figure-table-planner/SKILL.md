@@ -14,6 +14,11 @@ This skill ensures that visual materials serve the modeling logic rather than de
 
 This skill does not fabricate data, generate unsupported figures, write final paper sections, or perform final QA.
 
+**B-layer posture — the AI drafts, the modeler owns the claim.** Two spans in this plan are interpretive modeling judgments a judge grades, not mechanical bookkeeping: (a) the **figure TYPE** (1 诊断 / 2 对比 / 3 论文 / 4 附录) — what audience and purpose a figure serves — and (b) the **`core_claim`** — the single conclusion a figure is asked to defend in the paper. The AI may DRAFT both, but it must not FINALIZE either on the modeler's behalf:
+- The AI proposes a type as `[AI-DRAFT — modeler must confirm: <type>]`. The human ratifies or changes it.
+- For any **Type 3 (论文图)** figure — every figure that enters the paper — the AI must NOT author the claim. It writes `[MODELER INPUT NEEDED: what single claim does this figure defend?]` and stops there. A figure's claim is the sentence a judge weighs the figure against; the human authors it.
+- These sentinels (`[AI-DRAFT`, `[MODELER INPUT NEEDED`) are exactly like the C-layer `<<<HUMAN>>>` sentinel: a surviving sentinel in a finalized plan is a GATE FAIL. `completeness-auditor` treats them as "not done". See Rules and Verification.
+
 # When to use
 
 Use this skill:
@@ -114,7 +119,7 @@ Every planned figure MUST be classified into one of four types:
 
 **Requirements**:
 - Must be publication-quality: clear labels, readable fonts, proper legends, high resolution (≥300 dpi).
-- Must directly support a paper claim.
+- Must directly support a paper claim. **The claim is the modeler's to author.** Because a Type 3 figure enters the paper, its `core_claim` is a judgment a judge grades — the AI must NOT finalize it. Write the claim cell as `[MODELER INPUT NEEDED: what single claim does this figure defend?]` and leave it for the human. (The AI may still draft the figure's *type/title/source artifact*; only the claim is off-limits to author.)
 - Must have a complete, informative caption.
 - Must be generated from final (not intermediate) results.
 - Save to `paper/figures/` (final location).
@@ -209,9 +214,11 @@ Each `methods/Qx/qx_figure_table_plan.md` must follow this structure:
 
 ### Type 3 — 论文图 (Paper Figures — MUST appear in paper)
 
+The figure **type** is an AI draft the modeler confirms; the **Claim Supported** for every Type 3 figure is `[MODELER INPUT NEEDED: ...]` — the AI must not author it. A surviving sentinel here is a GATE FAIL.
+
 | ID | Title | Type | Claim Supported | Source Artifact | Paper Section | Status | Caption |
 |----|-------|------|----------------|-----------------|---------------|--------|---------|
-| Fig.X.1 | Final Ranking Comparison | bar chart | "City A ranks highest under entropy-TOPSIS." | `results/Q1/experiments/final/tables/m2_scores.csv` | Results Analysis | exists / planned | "Figure X: Final city rankings based on entropy-weight TOPSIS scores..." |
+| Fig.X.1 | Final Ranking Comparison | `[AI-DRAFT — modeler must confirm: bar chart / 论文图]` | `[MODELER INPUT NEEDED: what single claim does this figure defend?]` | `results/Q1/experiments/final/tables/m2_scores.csv` | Results Analysis | exists / planned | "Figure X: Final city rankings based on entropy-weight TOPSIS scores..." |
 
 ### Type 2 — 对比图 (Comparison Figures — MAY appear in paper)
 
@@ -280,8 +287,9 @@ Use these table types consistently:
 
 # Rules
 
-- Every planned figure must be classified into one of the four types (诊断图, 对比图, 论文图, 附录图).
-- Every planned figure or table must support a specific claim.
+- Every planned figure must be classified into one of the four types (诊断图, 对比图, 论文图, 附录图). **The type is the modeler's to confirm.** The AI may suggest a type, but it writes it as `[AI-DRAFT — modeler must confirm: <type>]`; the human ratifies or changes it. The four-type taxonomy and the "Type 1 诊断图 never in paper" rule are unchanged.
+- Every planned figure or table must support a specific claim. **For every Type 3 (论文图) figure — every figure that enters the paper — the AI must NOT author the claim.** Write the claim as `[MODELER INPUT NEEDED: what single claim does this figure defend?]`. The claim is the one sentence a judge weighs the figure against; the modeler owns it. (For Type 1/2/4 the AI may draft a claim, but a Type 3 claim is load-bearing and human-authored.)
+- A surviving `[AI-DRAFT` or `[MODELER INPUT NEEDED` sentinel in a finalized plan is a GATE FAIL — identical to a surviving `<<<HUMAN>>>` in a C-layer decision artifact. `completeness-auditor` treats these as "not done". Do not strip a sentinel by inventing the human's answer; only the modeler resolves it.
 - Every planned figure or table must map to at least one source artifact.
 - Every planned figure or table must map to a paper section (Type 1 diagnostic figures may map to "Internal Use Only").
 - Prefer fewer high-value visuals over many decorative visuals.
@@ -303,6 +311,8 @@ Before handing off, verify:
 
 - Every planned figure has a type (1-4), source artifact, target section, and supported claim.
 - Every planned table has a type, source artifact, target section, and supported claim.
+- **B-layer sentinel check (gate-blocking):** no `[AI-DRAFT` and no `[MODELER INPUT NEEDED` sentinel survives in a plan that is being handed off as "ready". A surviving sentinel means the modeler has not yet confirmed the figure type or authored the Type 3 claim — the plan is NOT ready, exactly as a surviving `<<<HUMAN>>>` blocks a C-layer artifact. Grep each `methods/Qx/qx_figure_table_plan.md` for `[AI-DRAFT` and `[MODELER INPUT NEEDED` before claiming done.
+- **Every Type 3 (论文图) figure has a human-authored `core_claim`** — not an AI sentence, not a copy of the AI's caption. If the claim cell still reads `[MODELER INPUT NEEDED: ...]`, hand the plan back to the modeler; do not author the claim to make the gate pass.
 - Type classification is correct: diagnostic figures are not marked as paper figures, and vice versa.
 - Existing artifacts and missing artifacts are separated.
 - No figure or table relies on fabricated data.
@@ -380,11 +390,13 @@ Output (`methods/Q1/q1_figure_table_plan.md` excerpt):
 
 ### Type 3 — 论文图 (Paper Figures)
 
+Type cells carry the AI's confirmable draft; every Claim Supported cell is left for the modeler. (Sentinels shown unresolved here on purpose — a finalized plan must have all of these replaced by the human, or the gate fails.)
+
 | ID | Title | Type | Claim Supported | Paper Section | Status |
 |----|-------|------|----------------|---------------|--------|
-| Fig.1.1 | Overall Evaluation Workflow | flowchart | "The evaluation process follows systematic indicator normalization, entropy weighting, TOPSIS scoring, and ranking." | Model Construction | planned |
-| Fig.1.2 | Indicator Weight Distribution | bar chart | "Entropy method assigns objective weights based on data dispersion." | Model Construction | exists |
-| Fig.1.3 | Final City Ranking | horizontal bar chart | "City A ranks highest with a closeness score of 0.88." | Results Analysis | exists |
+| Fig.1.1 | Overall Evaluation Workflow | `[AI-DRAFT — modeler must confirm: flowchart / 论文图]` | `[MODELER INPUT NEEDED: what single claim does this figure defend?]` | Model Construction | planned |
+| Fig.1.2 | Indicator Weight Distribution | `[AI-DRAFT — modeler must confirm: bar chart / 论文图]` | `[MODELER INPUT NEEDED: what single claim does this figure defend?]` | Model Construction | exists |
+| Fig.1.3 | Final City Ranking | `[AI-DRAFT — modeler must confirm: horizontal bar chart / 论文图]` | `[MODELER INPUT NEEDED: what single claim does this figure defend?]` | Results Analysis | exists |
 
 ### Type 2 — 对比图 (Comparison Figures)
 
@@ -412,10 +424,12 @@ Output (`methods/Q1/q1_figure_table_plan.md` excerpt):
 ```markdown
 ### Type 3 — 论文图
 
+(Claim cells stay `[MODELER INPUT NEEDED]` until the modeler authors them; the type is the AI's confirmable draft.)
+
 | ID | Title | Type | Claim Supported | Status |
 |----|-------|------|----------------|--------|
-| Fig.2.1 | Prediction vs Actual (Test Set) | scatter + line | "The ARIMA model captures the main demand trend with short-term RMSE of X." | exists |
-| Fig.2.2 | Forecast with Confidence Intervals | line + ribbon | "Future demand is projected with 95% confidence bounds." | exists |
+| Fig.2.1 | Prediction vs Actual (Test Set) | `[AI-DRAFT — modeler must confirm: scatter + line / 论文图]` | `[MODELER INPUT NEEDED: what single claim does this figure defend?]` | exists |
+| Fig.2.2 | Forecast with Confidence Intervals | `[AI-DRAFT — modeler must confirm: line + ribbon / 论文图]` | `[MODELER INPUT NEEDED: what single claim does this figure defend?]` | exists |
 
 ### Type 2 — 对比图
 

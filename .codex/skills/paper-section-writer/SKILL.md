@@ -60,15 +60,35 @@ If a section is below floor, the writer must report it as `status: under_floor` 
 
 Every numerical result reported in the paper MUST be accompanied by at least **three discussion dimensions** out of:
 
-1. **Sensitivity / robustness** — how does the number change under ±10% perturbation of weights / inputs / parameters? (sourced from `robustness/Qx/qx_robustness_report.md`)
-2. **Physical / domain meaning** — what does the number mean in the real world? Is it large or small? Plausible or surprising?
-3. **Baseline comparison** — how does this number compare to the baseline method's number? (sourced from comparison tables in `qx_final_result_analysis.md`)
-4. **Cross-subquestion consistency** — is this number consistent with related numbers from other subquestions? (e.g., total demand from Q2 should ≈ total allocated from Q3)
-5. **Uncertainty / confidence interval** — what's the confidence range? Standard error? Bootstrap CI?
+1. **Sensitivity / robustness** — how does the number change under ±10% perturbation of weights / inputs / parameters? (sourced from `robustness/Qx/qx_robustness_report.md`) — **AI may draft** from the robustness report.
+2. **Physical / domain meaning** — what does the number mean in the real world? Is it large or small? Plausible or surprising? — **AI MUST NOT author this.** This is a graded modeling judgment: whether a number is large/small/plausible is exactly what a judge grades and a student must learn. The AI emits the sentinel `[MODELER INPUT NEEDED: what does this number mean physically — is it large/small/plausible, what does it imply in the real world?]` in the physical-meaning slot and STOPS. A human replaces it.
+3. **Baseline comparison** — how does this number compare to the baseline method's number? (sourced from comparison tables in `qx_final_result_analysis.md`) — **AI may draft** from the analysis comparison tables.
+4. **Cross-subquestion consistency** — is this number consistent with related numbers from other subquestions? (e.g., total demand from Q2 should ≈ total allocated from Q3) — **AI may draft** from frozen numbers across Qx.
+5. **Uncertainty / confidence interval** — what's the confidence range? Standard error? Bootstrap CI? — **AI may draft** from the analysis/robustness artifacts.
 
 A bare claim like "RMSE = 2.4" with no discussion fails this gate. The minimum is 3 of the above 5 dimensions; pick whichever are most defensible from evidence.
 
-In the output JSON summary, include a `three_dimension_check` field listing, per numerical claim, which 3 dimensions were covered.
+**B-layer rule — physical meaning is the human's dimension.** Dimension 2 (physical / domain meaning) counts toward the ≥3 floor ONLY if its slot traces to a human-authored field, i.e. the `[MODELER INPUT NEEDED: ...]` sentinel has been replaced by human prose. A surviving `[MODELER INPUT NEEDED` (or any `[AI-DRAFT`) sentinel in the physical-meaning slot is NOT a covered dimension — it does not count, exactly as a `<<<HUMAN>>>` sentinel fails the C-layer decision gate. If removing the un-replaced physical-meaning slot drops a numerical claim below 3 covered dimensions, that claim FAILS G5.2 and the section is not "drafted". The AI draws the other dimensions (sensitivity from the robustness report, baseline from the analysis, cross-Qx, uncertainty) but never fabricates or finalizes the physical-meaning one to reach the floor.
+
+In the output JSON summary, include a `three_dimension_check` field listing, per numerical claim, which 3+ dimensions were covered AND, for the physical-meaning slot, whether it is `human_authored: true/false` (a `false` value means that dimension does NOT count and the claim may be under the floor).
+
+## G5.3 Three paper seeds the AI may not author (B-layer)
+
+Three high-stakes framing claims are graded judgments — what a judge reads first and weighs most. The AI may draft surrounding prose and mechanics, but MUST NOT originate these three. Each is emitted as a `[MODELER INPUT NEEDED: ...]` sentinel (no AI draft to copy) and a human must supply it before the abstract / Qx section counts as "drafted". A surviving sentinel here is a GATE FAIL, exactly like the physical-meaning slot above.
+
+1. **`key_result_claim` (abstract headline)** — *which* results are the headline of the paper. The AI knows every frozen number but must not decide which one(s) the abstract leads with. In the abstract draft, the headline slot is:
+   `[MODELER INPUT NEEDED: which result(s) are the headline of this paper — the number(s) the abstract leads with and why they matter?]`
+   The AI may surround it with the frozen numbers it has (so the human picks from real values), but must not pick the headline itself.
+
+2. **`contribution_claim` (what the innovation is)** — what this paper's contribution / innovation actually is. This is graded contribution, not a mechanical summary. In the abstract and/or strengths section, the contribution slot is:
+   `[MODELER INPUT NEEDED: what is this paper's contribution / innovation — what did we do that is new or better, in your own words?]`
+   The AI must NOT generalize "we built a model and it worked" into a contribution claim.
+
+3. **`why_this_method` (per Qx) — TRANSCRIBED, not re-authored** — the justification for the chosen method must NOT be re-authored by the AI from the method explanation. It is **transcribed verbatim** from the human's decision log at `methods/Qx/qx_decision_log.md`, with a provenance marker `<!-- from Qx-D0n -->` pointing to the specific decision entry. The method-selection narrative slot is:
+   `[MODELER INPUT NEEDED: transcribe the "why this method over the rejected ones" rationale from methods/Qx/qx_decision_log.md and tag it <!-- from Qx-D0n --> with the source decision id. Do NOT re-author this from the method explanation.]`
+   If `methods/Qx/qx_decision_log.md` is missing or has no entry for the method choice, the why-this-method slot stays a sentinel (gate FAIL) — route to `modeler-decision-logger`. The AI may quote/restate the *mechanics* of the method (assumptions, symbols, procedure) from the final method explanation, but the *judgment* ("why this over the alternatives") must carry the `<!-- from Qx-D0n -->` provenance marker and trace to a human decision entry. A why-this-method paragraph with no provenance marker fails this gate.
+
+In the output JSON summary, add a `paper_seeds` field reporting, per seed, `present: true/false` and (for `why_this_method`) the `provenance_marker` transcribed. Any seed `present: false` (surviving sentinel) means the affected section is NOT "drafted".
 
 # Three Critical Rules (Enforced as Hard Gates)
 
@@ -223,7 +243,7 @@ Prefer this JSON-compatible summary:
 ```json
 {
   "paper_writing_summary": {
-    "status": "drafted_with_gaps",
+    "status": "awaiting_modeler",
     "target_subquestion": "Q1",
     "gate_check": {
       "rule1_method_explanation_exists": true,
@@ -237,11 +257,29 @@ Prefer this JSON-compatible summary:
     ],
     "incomplete_sections": [],
     "unsupported_claims": [],
+    "three_dimension_check": [
+      {
+        "claim": "RMSE = 2.4",
+        "dimensions_covered": ["sensitivity", "baseline", "physical_meaning"],
+        "physical_meaning_human_authored": false,
+        "note": "physical-meaning slot still a [MODELER INPUT NEEDED] sentinel — does NOT count; claim currently at 2 covered dimensions, under floor."
+      }
+    ],
+    "paper_seeds": {
+      "key_result_claim": { "present": false, "note": "[MODELER INPUT NEEDED] sentinel in abstract — human must pick the headline." },
+      "contribution_claim": { "present": false, "note": "[MODELER INPUT NEEDED] sentinel in abstract — human must state the innovation." },
+      "why_this_method": { "present": false, "provenance_marker": null, "note": "awaiting transcription from methods/Q1/qx_decision_log.md tagged <!-- from Q1-D0n -->." }
+    },
+    "surviving_sentinels": [
+      "paper/sections/abstract.tex: key_result_claim, contribution_claim",
+      "paper/sections/q1.tex: physical-meaning slot for RMSE; why_this_method"
+    ],
     "artifact_mapping": [
       {
         "section": "q1.tex",
         "uses_artifacts": [
           "methods/Q1/q1_final_method_explanation.md",
+          "methods/Q1/qx_decision_log.md",
           "results/Q1/reports/q1_final_result_analysis.md",
           "results/Q1/reports/q1_solution_package_for_writer.md",
           "results/Q1/experiments/final/figures/q1_ranking.png",
@@ -249,7 +287,7 @@ Prefer this JSON-compatible summary:
         ]
       }
     ],
-    "recommended_next_skill": "quality-assurance-auditor"
+    "recommended_next_skill": "modeler (replace [MODELER INPUT NEEDED] sentinels), then quality-assurance-auditor"
   }
 }
 ```
@@ -259,7 +297,7 @@ If a JSON block is too rigid, use a concise Markdown report with the same fields
 # Paper section types
 
 ## Abstract
-Summarize the problem, methods, key results, robustness evidence, and final conclusions. Mention only numerical results that exist. Do not invent values or claim superiority without evidence.
+Summarize the problem, methods, key results, robustness evidence, and final conclusions. Mention only numerical results that exist. Do not invent values or claim superiority without evidence. **The AI MUST NOT author two seeds (G5.3):** the `key_result_claim` (which result is the headline) and the `contribution_claim` (what the innovation is) — emit each as a `[MODELER INPUT NEEDED: ...]` sentinel for the human to supply. The AI may draft the problem/method/robustness sentences around them.
 
 ## Problem restatement
 Restate the problem in the team's own words. Include background, main goal, subquestions, required outputs, and constraints.
@@ -283,10 +321,10 @@ Present the final model: assumptions, symbols, objective function/ evaluation cr
 Explain how the model was solved or computed. Link to generated and reviewed scripts. Mention solver, algorithm, or computation pipeline.
 
 ## Results analysis (per subquestion)
-Interpret model outputs. Use result tables and figures. Keep conclusions proportional to evidence. Separate result description from causal interpretation. Reference the final result analysis.
+Interpret model outputs. Use result tables and figures. Keep conclusions proportional to evidence. Separate result description from causal interpretation. Reference the final result analysis. **For every numerical result, the physical/domain-meaning discussion dimension (G5.2 dim 2) is the human's** — emit `[MODELER INPUT NEEDED: what does this number mean physically — is it large/small/plausible, what does it imply in the real world?]` and let the AI draft the other dimensions (sensitivity, baseline, cross-Qx, uncertainty).
 
 ## Method selection narrative (per subquestion, optional)
-Describe the candidate method pool, what was tried, what was eliminated, why the final method was chosen. Supported by comparison figures (Type 2) and experiment reports.
+Describe the candidate method pool, what was tried, what was eliminated, why the final method was chosen. Supported by comparison figures (Type 2) and experiment reports. **The "why this method" judgment is the `why_this_method` seed (G5.3) and MUST be transcribed from `methods/Qx/qx_decision_log.md` with a `<!-- from Qx-D0n -->` provenance marker — the AI must NOT re-author it.** Emit `[MODELER INPUT NEEDED: transcribe the why-this-method rationale from methods/Qx/qx_decision_log.md, tagged <!-- from Qx-D0n -->]` if the decision entry is not yet available. The AI may describe the candidate pool and elimination *mechanics* freely.
 
 ## Robustness and sensitivity analysis
 Show whether conclusions are stable. Use robustness-checker outputs. Separate stable and fragile conclusions. State conclusion boundaries.
@@ -317,11 +355,13 @@ Describe code, extra tables, parameter settings, or supplementary derivations. L
 - Avoid filler phrases that do not advance the argument.
 - **Word-count floors are not suggestions** — a section under floor is `under_floor`, not "drafted". Do not pad with generic prose to hit the floor; identify the missing subsection instead.
 - **Every numerical result needs ≥ 3 discussion dimensions** (G5.2). A bare number is not a result; it's an isolated digit.
+- **The AI drafts mechanics; the human owns the graded judgments.** Three things the AI MUST NOT finalize on the human's behalf: (a) the physical/domain-meaning discussion dimension for any numerical result (G5.2 dim 2), (b) the abstract's `key_result_claim` and `contribution_claim` (G5.3), (c) the `why_this_method` per Qx, which is transcribed from `methods/Qx/qx_decision_log.md` with a `<!-- from Qx-D0n -->` provenance marker, never re-authored. Each is emitted as a `[MODELER INPUT NEEDED: ...]` sentinel. A surviving `[MODELER INPUT NEEDED` or `[AI-DRAFT` sentinel in a finalized section is a GATE FAIL — the same way a `<<<HUMAN>>>` sentinel fails the C-layer decision artifact. Do not delete a sentinel by writing the judgment yourself; that defeats the gate.
 
 # Rules
 
 - CRITICAL: Enforce the three gate checks before writing ANY final section for a subquestion.
 - If gates fail, stop and redirect — do not write the final paper.
+- CRITICAL (B-layer): The AI does NOT finalize graded judgments on the human's behalf. For every numerical result, leave the physical/domain-meaning dimension as `[MODELER INPUT NEEDED: ...]` (G5.2 dim 2). In the abstract, leave `key_result_claim` and `contribution_claim` as `[MODELER INPUT NEEDED: ...]` (G5.3). For each Qx, the why-this-method judgment is transcribed from `methods/Qx/qx_decision_log.md` with a `<!-- from Qx-D0n -->` marker, never re-authored. A section with a surviving `[MODELER INPUT NEEDED` / `[AI-DRAFT` sentinel is NOT "drafted" — it is `awaiting_modeler`, and the gate fails (completeness-auditor treats these sentinels as not-done).
 - Partial drafts may be written for non-gated sections (problem restatement, data preprocessing) but must be marked as "DRAFT — awaiting [missing prerequisite]".
 - Do not run code, clean data, change models, or fabricate data/results/references/figures/tables.
 - Do not perform final QA or approve final submission.
@@ -336,7 +376,8 @@ Before handing off, verify:
 
 - Gate check passed for the target subquestion (all three rules satisfied).
 - **Gate G5 passed**: each drafted section is at or above its word-count floor (or marked `under_floor` with identified gap).
-- **Three-dimension discussion check**: each numerical claim has ≥ 3 of {sensitivity, physical meaning, baseline, cross-Qx, uncertainty} discussion dimensions.
+- **Three-dimension discussion check**: each numerical claim has ≥ 3 of {sensitivity, physical meaning, baseline, cross-Qx, uncertainty} discussion dimensions — and the physical-meaning dimension counts toward the 3 ONLY if its `[MODELER INPUT NEEDED: ...]` sentinel has been replaced by human prose. Removing un-replaced physical-meaning slots, no numerical claim is left under 3 covered dimensions.
+- **B-layer sentinel sweep**: no `[MODELER INPUT NEEDED` and no `[AI-DRAFT` sentinel survives in any section claimed "drafted". The three seeds (G5.3) — `key_result_claim`, `contribution_claim`, `why_this_method` per Qx — are present and human-supplied. Each `why_this_method` paragraph carries a `<!-- from Qx-D0n -->` provenance marker tracing to `methods/Qx/qx_decision_log.md`. A surviving sentinel = gate FAIL; mark the section `awaiting_modeler`, not "drafted".
 - The solution package was used as the primary source.
 - Every drafted section uses only available artifacts.
 - **Every numerical claim is sourced from `frozen_numbers.json`** (not raw results, not previous drafts).
@@ -412,7 +453,7 @@ If gates failed, hand back to `workflow-orchestrator` with the specific gate fai
 
 # Examples
 
-## Example 1: All gates pass — write Q1 section
+## Example 1: All gates pass — draft Q1 section, but seeds await the modeler (B-layer)
 
 Input state:
 - `methods/Q1/q1_final_method_explanation.md` exists.
@@ -421,11 +462,13 @@ Input state:
 - Figure-table plan exists.
 - User asks: "write the Q1 paper section."
 
+The AI drafts the mechanics (model construction, solution, baseline/sensitivity discussion) but leaves the graded judgments as sentinels: the physical-meaning slot per number, and the abstract's `key_result_claim` / `contribution_claim`, and the `why_this_method` paragraph (which must be transcribed from the decision log). Status is `awaiting_modeler`, not "drafted", until those sentinels are replaced by the human.
+
 Output:
 ```json
 {
   "paper_writing_summary": {
-    "status": "drafted",
+    "status": "awaiting_modeler",
     "target_subquestion": "Q1",
     "gate_check": {
       "rule1_method_explanation_exists": true,
@@ -434,10 +477,19 @@ Output:
       "all_gates_passed": true
     },
     "drafted_sections": [
-      "paper/sections/q1.tex"
+      "paper/sections/q1.tex (mechanics drafted; physical-meaning + why_this_method sentinels pending)"
+    ],
+    "paper_seeds": {
+      "key_result_claim": { "present": false },
+      "contribution_claim": { "present": false },
+      "why_this_method": { "present": false, "provenance_marker": null }
+    },
+    "surviving_sentinels": [
+      "paper/sections/abstract.tex: key_result_claim, contribution_claim",
+      "paper/sections/q1.tex: physical-meaning slot per number; why_this_method"
     ],
     "primary_source_used": "results/Q1/reports/q1_solution_package_for_writer.md",
-    "recommended_next_skill": "quality-assurance-auditor"
+    "recommended_next_skill": "modeler (replace sentinels; transcribe why_this_method from methods/Q1/qx_decision_log.md), then quality-assurance-auditor"
   }
 }
 ```

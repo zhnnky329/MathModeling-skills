@@ -66,9 +66,9 @@ Numbers flow code → results → paper. Without a freeze layer, a bug fix in co
 
 # Human Decision Artifact Convention
 
-> Status: DRAFT — schema is being validated on a `method-selector` pilot (Gate G2.5). Field names and floors may change before this convention is generalized to the other judgment-bearing skills. Parallel to the Frozen Numbers Convention: just as numbers are frozen so a bug fix can't silently shift the paper, modeling *judgments* are pinned to a human-authored artifact so the AI can't silently author what a judge grades.
+> Parallel to the Frozen Numbers Convention: just as numbers are frozen so a bug fix can't silently shift the paper, modeling *judgments* are pinned to a human-authored artifact so the AI can't silently author what a judge grades. The schema's char floors are still being calibrated against real usage — tune them, don't treat them as final.
 
-A judgment-bearing skill (currently `method-selector`; later `result-report-generator`, `robustness-checker`, `final-method-explainer`, `solution-package-builder`) must NOT originate the graded verdict (which method, why, `[CHOSEN]`/`[REJECTED]`, confidence, what a number means). It lays out evidence + an AI suggestion, then STOPS and requires a human decision artifact before its gate passes.
+The five C-layer (judgment-bearing) skills — `method-selector` (G2.5), `result-report-generator` / `robustness-checker` / `final-method-explainer` (G4.5), `solution-package-builder` (G4 sign-off) — must NOT originate the graded verdict (which method, why, `[CHOSEN]`/`[REJECTED]`, confidence, what a number means). Each lays out evidence + an AI suggestion, then STOPS and requires a human decision artifact before its gate passes. The seven B-layer (drafts-for-review) skills draft prose but mark every judgment-bearing span with a sentinel (`[AI-DRAFT — modeler must confirm: …]` or `[MODELER INPUT NEEDED: …]`) the human must replace; a surviving sentinel blocks the gate exactly like `<<<HUMAN>>>`.
 
 **Path:** `methods/Qx/decisions/<skill>_modeler_decision.md` (global-scope skills use `planning/decisions/`).
 
@@ -105,6 +105,15 @@ number or criterion from the evidence.>>>
 - **Cannot prove human authorship.** A determined user can paraphrase AI text. The gate makes rubber-stamping a dead end and leaves a visible engagement trail; it does not claim authorship proof.
 
 **Recovery after a FAIL:** edit the artifact → `status` flips to DECIDED, `decided_at` refreshes → next orchestrator run re-checks the file (stateless) → on pass, the gate's human sub-flag flips true. Downstream DIRTY artifacts are NOT auto-trusted: `consistency-auditor` must re-run incrementally for that Qx (the Change-propagation rule P1) before DIRTY clears. If the edited decision sat behind a frozen number, walk `解冻 → 修改 → 重冻结`; the decision record appends a new entry with `supersedes`, never overwrites.
+
+# AI-Use Disclosure Convention
+
+Contests permit AI **assistance** and forbid AI **doing the modeling for the team**. The pipeline already knows exactly which skill touched which artifact and which fields were AI-drafted vs human-authored — so it can produce a more honest disclosure than a human writing one from memory.
+
+- The pipeline emits `paper/ai_use_disclosure.md` enumerating, per artifact, what was AI-drafted vs human-authored, derived from the decision artifacts and the surviving/replaced sentinels.
+- **The disclosure must tell the truth about rubber-stamping.** If a human-owned field was never edited from the AI's `ai_suggestion` (near-verbatim), the disclosure records `AI-drafted, accepted without modification` — NOT `human-authored`. A clean "I wrote this" attestation must be earned, so faking engagement gains nothing.
+- Granularity follows a `contest_profile` (`COMAP` | `CUMCM` | `OTHER`): COMAP gets the full AI-use report formatted to the contest's spec; CUMCM/strict gets an internal warning ("this contest may not permit AI assistance — verify; this disclosure is for your records / integrity pledge, not necessarily for submission") rather than auto-inserting an appendix into a paper for a contest with no disclosure channel.
+- **No contest's AI policy is encoded here as authoritative.** AI rules change every cycle and differ sharply (COMAP disclose-and-allow vs CUMCM originality-first). Defaults target the strictest plausible interpretation so a workflow compliant under the loosest contest is also compliant under the strictest. The team must read their contest's current-year official rules; the final compliance call is the human's.
 
 # Rejected-Method Archival Convention
 

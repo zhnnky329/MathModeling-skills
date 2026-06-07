@@ -73,6 +73,19 @@ These are the files the human-decision gates (G2.5, G4.5, G4 sign-off) block on.
 
 A decision artifact failing any of 1–3 is BLOCKING (the gate cannot pass). Item 4 failing is BLOCKING (it's a copy). Items 5–6 produce WARN unless noted HARD. Report each with the exact field, so the modeler knows precisely what to fill.
 
+### B-layer sentinel sweep (drafts-for-review skills)
+
+The seven B-layer skills don't emit a front-matter decision artifact; instead they mark each judgment-bearing span with a sentinel the human must replace. A surviving sentinel = the human hasn't done their part = the gate that owns it cannot pass. Sweep these and report any survivor as BLOCKING for its gate:
+
+| Sentinel pattern | Where (load-bearing spans) | Gate it blocks |
+|------------------|-----------------------------|----------------|
+| `[MODELER INPUT NEEDED: …]` | problem-parser `evaluation_criteria`; problem-classifier `framing_rationale` / `modeler_chosen_type` | G1 |
+| `[AI-DRAFT — modeler must confirm: …]` | problem-parser proposed relationships; model-assumptions-builder necessity + impact labels | G1 / G5 |
+| `[MODELER INPUT NEEDED: …]` | paper-section-writer physical-meaning slot + the three seeds (`key_result_claim`, `contribution_claim`, `why_this_method`) | G5 |
+| `[AI-DRAFT — modeler must confirm: …]` / `[MODELER INPUT NEEDED: …]` | figure-table-planner Type-3 `core_claim`; math-figure-generator figure `core_claim` (blocks promotion to `paper/figures/`) | G5 |
+
+The sweep is a plain substring search for `[MODELER INPUT NEEDED` and `[AI-DRAFT —` in the finalized artifacts — same mechanism as the `<<<HUMAN>>>` sentinel check, no NLP. Report each survivor with file:line and the gate it blocks.
+
 ## Global (project-wide)
 
 | Producer skill | Required artifact | Min pass items |

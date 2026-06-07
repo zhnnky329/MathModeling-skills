@@ -64,10 +64,11 @@ Use or request:
    - Simulation tasks often require scenario generation, stochastic processes, agent behavior, Monte Carlo trials, or repeated process imitation.
    - Hybrid tasks combine multiple task types and should be decomposed by subquestion or modeling layer.
 
-3. Determine the primary type.
-   - Choose the most central task type for each subquestion.
-   - Use the required output as the main decision criterion.
+3. Suggest the primary type — but do not finalize the framing.
+   - Emit the AI's pick as `ai_suggested_type` with an `ai_suggestion_confidence`, keeping it clearly the AI's suggestion.
+   - Use the required output as the main decision criterion and explain the reasoning, so the human has something concrete to ratify.
    - Prefer the type that determines how results will be judged.
+   - The primary problem-type label is load-bearing framing — it steers `method-selector`. It is the human's call, not the AI's. Leave `modeler_chosen_type` and `framing_rationale` as `[MODELER INPUT NEEDED: ...]` sentinels for the modeler to author. Do NOT pre-fill them by copying `ai_suggested_type`.
 
 4. Determine the secondary type if needed.
    - Add a secondary type only when it materially affects method selection.
@@ -119,7 +120,10 @@ Prefer this JSON-compatible structure for `workspace/problem/problem-classifier/
   "subquestion_classifications": [
     {
       "id": "Q1",
-      "primary_type": "evaluation",
+      "ai_suggested_type": "evaluation",
+      "ai_suggestion_confidence": "high",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'evaluation']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q2 is evaluation not prediction because the graded output is a ranking, not a future value]",
       "secondary_type": "data_analysis",
       "classification_reason": "The subquestion asks for comparable scores or rankings based on multiple indicators.",
       "output_driver": [
@@ -171,6 +175,14 @@ Prefer this JSON-compatible structure for `workspace/problem/problem-classifier/
 ```
 
 Also produce `workspace/problem/problem-classifier/problem_classification.md` with the same fields in readable Markdown form.
+
+**B-layer human-confirmation field (load-bearing framing).** The primary problem-type label steers method selection, so the AI suggests but the human decides. For every subquestion:
+
+- `ai_suggested_type` — the AI's pick (the old `primary_type`). The AI authors this, with `ai_suggestion_confidence` and a `classification_reason`.
+- `modeler_chosen_type` — the confirmed primary type. Emit it as `[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests '<ai_suggested_type>']`. The AI must NOT fill this in.
+- `framing_rationale` — emit as `[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q2 is evaluation not prediction because…]`. The AI must NOT fill this in.
+
+A surviving `[MODELER INPUT NEEDED` (or `[AI-DRAFT`) sentinel in a finalized classification artifact is a Gate G1 FAIL — `completeness-auditor` already treats these sentinels as "not done", exactly like the C-layer `<<<HUMAN>>>` decision sentinel. The human must replace both sentinels before classification is "ready". Carry `ai_suggested_type` forward in every example below; never replace it with a finalized `primary_type`.
 
 # Standard problem types
 
@@ -509,6 +521,9 @@ Candidate method families:
 
 - Classify by subquestion, not by the entire problem title.
 - Use the required output to determine the primary type.
+- The primary problem-type label is load-bearing framing that steers `method-selector`. The AI suggests it (`ai_suggested_type` + confidence + reason); the human owns the final framing. Emit `modeler_chosen_type` and `framing_rationale` as `[MODELER INPUT NEEDED: ...]` sentinels and let the modeler author them.
+- Do not author, pre-fill, or copy `ai_suggested_type` into `modeler_chosen_type` or `framing_rationale` on the human's behalf.
+- A surviving `[MODELER INPUT NEEDED` or `[AI-DRAFT` sentinel in the finalized classification artifact is a Gate G1 FAIL — treat it exactly like the C-layer `<<<HUMAN>>>` sentinel; classification is not "ready" until the human replaces it.
 - Do not select the final model.
 - Do not generate code.
 - Do not write paper text.
@@ -522,7 +537,8 @@ Candidate method families:
 
 Before handing off, verify:
 
-- Every parsed subquestion has a primary type.
+- Every parsed subquestion has an `ai_suggested_type` (the AI's suggested primary type) with a confidence and reason.
+- Every parsed subquestion still carries the `[MODELER INPUT NEEDED: ...]` sentinels for `modeler_chosen_type` and `framing_rationale` — the AI must not have authored or copied them. A surviving sentinel is a Gate G1 FAIL the human must clear (it confirms the framing has not yet been ratified); the AI hands off with these sentinels intact, not pre-filled.
 - Secondary types are used only when necessary.
 - Classification reasons refer to task wording, required output, and data conditions.
 - Candidate method families are broad, not final model choices.
@@ -566,7 +582,7 @@ After producing a validated classification artifact, hand off to:
 The handoff should include:
 
 - each subquestion ID
-- primary type
+- `ai_suggested_type` (the AI's suggested primary type) plus the `modeler_chosen_type` / `framing_rationale` status (confirmed by the human, or still a `[MODELER INPUT NEEDED]` sentinel)
 - secondary type if needed
 - classification reason
 - candidate method families
@@ -597,7 +613,10 @@ Output:
   "subquestion_classifications": [
     {
       "id": "Q1",
-      "primary_type": "evaluation",
+      "ai_suggested_type": "evaluation",
+      "ai_suggestion_confidence": "high",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'evaluation']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q1 is evaluation not prediction because the graded output is a ranking, not a future value]",
       "secondary_type": "data-analysis",
       "classification_reason": "Q1 asks for city ranking based on multiple indicators.",
       "candidate_method_families": [
@@ -611,7 +630,10 @@ Output:
     },
     {
       "id": "Q2",
-      "primary_type": "prediction",
+      "ai_suggested_type": "prediction",
+      "ai_suggestion_confidence": "high",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'prediction']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q2 is prediction not evaluation because the graded output is a future demand value, not a ranking]",
       "secondary_type": "data-analysis",
       "classification_reason": "Q2 asks for future demand estimates.",
       "candidate_method_families": [
@@ -625,7 +647,10 @@ Output:
     },
     {
       "id": "Q3",
-      "primary_type": "optimization",
+      "ai_suggested_type": "optimization",
+      "ai_suggestion_confidence": "high",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'optimization']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q3 is optimization not evaluation because the graded output is an allocation plan under constraints, not a score]",
       "secondary_type": "multi-objective decision",
       "classification_reason": "Q3 asks for an allocation plan under limited resources.",
       "candidate_method_families": [
@@ -662,17 +687,26 @@ Output:
   "subquestion_classifications": [
     {
       "id": "Q1",
-      "primary_type": "data-analysis",
+      "ai_suggested_type": "data-analysis",
+      "ai_suggestion_confidence": "medium",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'data-analysis']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q1 is data-analysis not prediction because the graded output is influencing-factor relationships, not future values]",
       "classification_reason": "Q1 asks for relationships and influencing factors rather than future values."
     },
     {
       "id": "Q2",
-      "primary_type": "prediction",
+      "ai_suggested_type": "prediction",
+      "ai_suggestion_confidence": "high",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'prediction']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q2 is prediction not data-analysis because the graded output is future sales values]",
       "classification_reason": "Q2 asks for future sales estimates."
     },
     {
       "id": "Q3",
-      "primary_type": "optimization",
+      "ai_suggested_type": "optimization",
+      "ai_suggestion_confidence": "high",
+      "modeler_chosen_type": "[MODELER INPUT NEEDED: confirm or override the primary type — the AI suggests 'optimization']",
+      "framing_rationale": "[MODELER INPUT NEEDED: which type, and why this framing over the alternative — e.g. Q3 is optimization not prediction because the graded output is a pricing decision under constraints]",
       "classification_reason": "Q3 asks for a pricing decision."
     }
   ],

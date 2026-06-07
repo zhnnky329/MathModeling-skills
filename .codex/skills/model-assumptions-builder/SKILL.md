@@ -54,11 +54,12 @@ Use or request:
 
 4. Categorize every assumption.
 
-   **By necessity:**
+   **By necessity (JUDGMENT — modeler ratifies):**
    - **Necessary (hard)**: The model breaks or becomes meaningless if violated.
    - **Simplifying (soft)**: The model still works approximately but is less accurate if violated.
+   - The necessary-vs-simplifying call is a modeling judgment a judge grades, not a mechanical fact. The AI proposes a label but does NOT finalize it: write each Type cell as `[AI-DRAFT — modeler must confirm: necessary | simplifying]` (keep the AI's actual pick inside the sentinel) so the modeler must act to ratify or change it.
 
-   **By scope:**
+   **By scope (AI-owned — mechanical):**
    - **Global**: Applies to all subquestions (e.g., "data is reliable").
    - **Per-subquestion**: Applies only to specific subquestions (e.g., "indicators are independent" for Q1 TOPSIS).
    - **Method-specific**: Applies only to a specific candidate method.
@@ -67,9 +68,10 @@ Use or request:
    - An assumption for Q1 might contradict an assumption for Q3.
    - Example: Q1 assumes indicators are independent, but Q3 uses a method that models indicator interactions — these must be reconciled.
 
-6. Assess assumption impact.
+6. Assess assumption impact (JUDGMENT — modeler ratifies).
    - For each assumption, state what happens if it is violated.
    - Weak assumptions (those whose violation changes conclusions) should be flagged.
+   - The impact-if-violated framing is a modeling judgment the human owns: it is what tells a judge how exposed the model is. The AI drafts it but does NOT finalize it — write each impact cell as `[AI-DRAFT — modeler must confirm: <impact if violated>]` so the modeler must ratify or rewrite it.
 
 7. Produce the assumptions document.
    - Save as `planning/model_assumptions.md`.
@@ -83,6 +85,8 @@ Produce one document:
 
 # Output format
 
+> **B-layer (drafts for review).** Surfacing candidate assumptions, their source, and a draft justification stays AI-owned. But two columns are modeling *judgment* the human owns and a judge grades: the **Type (necessary | simplifying)** label and the **Impact if Violated / Relaxed** framing. The AI must NOT finalize these — it drafts them inside `[AI-DRAFT — modeler must confirm: ...]` sentinels, and the modeler ratifies (keeps or rewrites). A surviving `[AI-DRAFT` sentinel in a finalized `planning/model_assumptions.md` is a GATE FAIL, exactly like a `<<<HUMAN>>>` sentinel in a C-layer decision artifact — `completeness-auditor` treats it as "not done". Every assumption still stays tied to a modeling need (problem statement or a specific method); never invent assumptions to fill the table.
+
 ```markdown
 # Global Model Assumptions
 
@@ -93,41 +97,49 @@ Produce one document:
 
 ### 1.1 Necessary Global Assumptions
 
-| # | Assumption | Source | Justification | Impact if Violated |
-|---|-----------|--------|---------------|-------------------|
-| A1 | The provided data accurately reflects the true state of the system. | Problem statement | No alternative data source; contest data is taken as given. | All quantitative results become unreliable. |
-| A2 | The system operates under steady-state conditions (no structural breaks within the analysis period). | Implicit from problem context | The problem does not describe regime changes or structural shifts. | Predictions and rankings may be invalid for periods with structural changes. |
-| A3 | All cities/alternatives are comparable on the same set of indicators. | Implicit from problem context | The problem asks for a unified ranking/evaluation. | Ranking becomes meaningless if cities are incommensurable. |
+> The "Necessary" placement of each row below is an AI draft; the modeler confirms or moves the row by ratifying the Type sentinel.
+
+| # | Assumption | Source | Justification | Type | Impact if Violated |
+|---|-----------|--------|---------------|------|-------------------|
+| A1 | The provided data accurately reflects the true state of the system. | Problem statement | No alternative data source; contest data is taken as given. | [AI-DRAFT — modeler must confirm: necessary] | [AI-DRAFT — modeler must confirm: All quantitative results become unreliable.] |
+| A2 | The system operates under steady-state conditions (no structural breaks within the analysis period). | Implicit from problem context | The problem does not describe regime changes or structural shifts. | [AI-DRAFT — modeler must confirm: necessary] | [AI-DRAFT — modeler must confirm: Predictions and rankings may be invalid for periods with structural changes.] |
+| A3 | All cities/alternatives are comparable on the same set of indicators. | Implicit from problem context | The problem asks for a unified ranking/evaluation. | [AI-DRAFT — modeler must confirm: necessary] | [AI-DRAFT — modeler must confirm: Ranking becomes meaningless if cities are incommensurable.] |
 
 ### 1.2 Simplifying Global Assumptions
 
-| # | Assumption | Source | Justification | Impact if Relaxed |
-|---|-----------|--------|---------------|-------------------|
-| A4 | External factors not mentioned in the problem do not significantly affect the system. | Implicit | Contest scope limitation; model cannot account for unmentioned factors. | Results may not generalize to real-world scenarios with additional factors. |
-| A5 | Data measurement errors are negligible. | Implicit | No error margins provided in data. | Rankings and predictions would have wider confidence intervals. |
+> The "Simplifying" placement of each row below is an AI draft; the modeler confirms or moves the row by ratifying the Type sentinel.
+
+| # | Assumption | Source | Justification | Type | Impact if Relaxed |
+|---|-----------|--------|---------------|------|-------------------|
+| A4 | External factors not mentioned in the problem do not significantly affect the system. | Implicit | Contest scope limitation; model cannot account for unmentioned factors. | [AI-DRAFT — modeler must confirm: simplifying] | [AI-DRAFT — modeler must confirm: Results may not generalize to real-world scenarios with additional factors.] |
+| A5 | Data measurement errors are negligible. | Implicit | No error margins provided in data. | [AI-DRAFT — modeler must confirm: simplifying] | [AI-DRAFT — modeler must confirm: Rankings and predictions would have wider confidence intervals.] |
 
 ## 2. Q1 Assumptions (Evaluation)
 
 ### 2.1 Necessary
 
-| # | Assumption | Method | Justification | Impact if Violated |
-|---|-----------|--------|---------------|-------------------|
-| Q1-A1 | Indicators are sufficiently independent for entropy weighting. | M2: Entropy-TOPSIS | Entropy weights can be distorted by highly correlated indicators. | Weights may double-count the same underlying factor. Mitigation: check correlation matrix; use PCA if correlations > 0.8. |
-| Q1-A2 | Indicator directions (positive/negative) are correctly identified. | M1, M2, M3 | Normalization direction affects scores. | Rankings could be inverted for misclassified indicators. |
+> The "Necessary" placement of each row below is an AI draft; the modeler confirms or moves the row by ratifying the Type sentinel.
+
+| # | Assumption | Method | Justification | Type | Impact if Violated |
+|---|-----------|--------|---------------|------|-------------------|
+| Q1-A1 | Indicators are sufficiently independent for entropy weighting. | M2: Entropy-TOPSIS | Entropy weights can be distorted by highly correlated indicators. | [AI-DRAFT — modeler must confirm: necessary] | [AI-DRAFT — modeler must confirm: Weights may double-count the same underlying factor. Mitigation: check correlation matrix; use PCA if correlations > 0.8.] |
+| Q1-A2 | Indicator directions (positive/negative) are correctly identified. | M1, M2, M3 | Normalization direction affects scores. | [AI-DRAFT — modeler must confirm: necessary] | [AI-DRAFT — modeler must confirm: Rankings could be inverted for misclassified indicators.] |
 
 ### 2.2 Simplifying
 
-| # | Assumption | Method | Justification | Impact if Relaxed |
-|---|-----------|--------|---------------|-------------------|
-| Q1-A3 | Linear aggregation of indicators is adequate for evaluation. | M1, M2 | Simpler than nonlinear aggregation; common in contest practice. | Nonlinear interactions between indicators would be missed. |
+> The "Simplifying" placement of each row below is an AI draft; the modeler confirms or moves the row by ratifying the Type sentinel.
+
+| # | Assumption | Method | Justification | Type | Impact if Relaxed |
+|---|-----------|--------|---------------|------|-------------------|
+| Q1-A3 | Linear aggregation of indicators is adequate for evaluation. | M1, M2 | Simpler than nonlinear aggregation; common in contest practice. | [AI-DRAFT — modeler must confirm: simplifying] | [AI-DRAFT — modeler must confirm: Nonlinear interactions between indicators would be missed.] |
 
 ## 3. Q2 Assumptions (Prediction)
 
 | # | Assumption | Method | Type | Justification | Impact |
 |---|-----------|--------|------|---------------|--------|
-| Q2-A1 | Historical patterns continue into the forecast period. | M1, M2, M3 | Necessary | Fundamental to all forecasting. | Forecasts become unreliable if structural changes occur. |
-| Q2-A2 | The time series is stationary after differencing. | M2: ARIMA | Necessary | Required for ARIMA model validity. | Non-stationary residuals indicate model misspecification. |
-| Q2-A3 | Demand in different cities is independent. | M1, M2, M3 | Simplifying | Avoids spatial correlation modeling complexity. | Cross-city spillover effects would be missed. |
+| Q2-A1 | Historical patterns continue into the forecast period. | M1, M2, M3 | [AI-DRAFT — modeler must confirm: necessary] | Fundamental to all forecasting. | [AI-DRAFT — modeler must confirm: Forecasts become unreliable if structural changes occur.] |
+| Q2-A2 | The time series is stationary after differencing. | M2: ARIMA | [AI-DRAFT — modeler must confirm: necessary] | Required for ARIMA model validity. | [AI-DRAFT — modeler must confirm: Non-stationary residuals indicate model misspecification.] |
+| Q2-A3 | Demand in different cities is independent. | M1, M2, M3 | [AI-DRAFT — modeler must confirm: simplifying] | Avoids spatial correlation modeling complexity. | [AI-DRAFT — modeler must confirm: Cross-city spillover effects would be missed.] |
 
 ## 4. Cross-Subquestion Assumption Dependencies
 
@@ -153,14 +165,16 @@ Produce one document:
 
 # Rules
 
-- Extract assumptions from both the problem statement and the chosen methods.
-- Categorize every assumption: necessary vs simplifying, global vs per-question vs method-specific.
-- State the impact of violating each assumption.
+- Extract assumptions from both the problem statement and the chosen methods. Surfacing candidate assumptions, their source, and a draft justification stays AI-owned.
+- Categorize every assumption: necessary vs simplifying, global vs per-question vs method-specific. Keep the necessary/simplifying distinction itself, and keep every assumption tied to a modeling need.
+- **The necessary-vs-simplifying label is the modeler's judgment, not the AI's.** Draft it inside `[AI-DRAFT — modeler must confirm: necessary | simplifying]`; do not finalize it on the human's behalf.
+- **The impact-if-violated framing is the modeler's judgment, not the AI's.** Draft it inside `[AI-DRAFT — modeler must confirm: <impact if violated>]`; do not finalize it on the human's behalf.
+- A surviving `[AI-DRAFT` sentinel in a finalized `planning/model_assumptions.md` is a GATE FAIL — `completeness-auditor` treats it exactly like an unreplaced `<<<HUMAN>>>` sentinel ("not done"). The artifact is not "ready" until every Type and Impact span has been ratified or rewritten by the human.
 - Flag assumptions that require validation.
 - Do not invent assumptions just to have more. Each must be traceable to the problem or a method.
 - Check for conflicts between subquestions' assumptions.
 - If an assumption is strong, suggest how to validate or mitigate it.
-- Update the document when methods change during iteration.
+- Update the document when methods change during iteration (re-draft new Type/Impact spans as `[AI-DRAFT ...]` for the modeler to re-ratify).
 
 # Verification
 
@@ -173,6 +187,13 @@ Before handing off, verify:
 - No contradictory assumptions across subquestions.
 - Validation methods are suggested for key assumptions.
 - The document is traceable to problem parse and method pools.
+
+**B-layer gate (judgment-bearing spans must be human-ratified):**
+
+- No `[AI-DRAFT` or `[MODELER INPUT NEEDED` sentinel survives anywhere in `planning/model_assumptions.md`. A surviving sentinel = NOT done; the gate FAILS exactly like a `<<<HUMAN>>>` sentinel in a C-layer decision artifact. Grep for it: `grep -n '\[AI-DRAFT\|\[MODELER INPUT NEEDED' planning/model_assumptions.md` must return nothing.
+- Every assumption's **Type (necessary | simplifying)** cell has been ratified or rewritten by the modeler — the AI must not have finalized this label itself.
+- Every assumption's **Impact if Violated / Relaxed** cell has been ratified or rewritten by the modeler — the AI must not have finalized this framing itself.
+- If the AI hands off with sentinels still present, it must flag the artifact as DRAFT (modeler ratification pending), not "ready".
 
 # Failure modes
 

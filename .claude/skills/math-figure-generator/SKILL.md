@@ -14,7 +14,7 @@ Adapted from the [nature-figure](https://github.com/Yuan1z0825/nature-skills) sk
 
 Before any code, define the contract:
 
-1. **Core claim**: what one-sentence conclusion this figure defends.
+1. **Core claim** (judgment-bearing — NOT originated here): the one-sentence conclusion this figure defends. This is a modeling judgment a judge grades ("what does this figure assert is true?"), so the AI must NOT author it on the human's behalf. **Pull it from a human-confirmed source** — the `core_claim` the modeler confirmed in `methods/Qx/qx_figure_table_plan.md` (figure-table-planner), or a `DECIDED` record in the decision log. If no confirmed claim exists yet, copy the planner's draft verbatim and keep it inside a sentinel: `[AI-DRAFT — modeler must confirm: <the one-sentence claim>]`. If there is no draft at all, write `[MODELER INPUT NEEDED: one-sentence conclusion this figure must defend]` — do NOT invent one. A surviving `[AI-DRAFT` / `[MODELER INPUT NEEDED` sentinel means the claim is unconfirmed: the figure may be rendered for review but MUST NOT be promoted to `paper/figures/` as Type 3/4 (see the promotion gate under Render-check).
 2. **Figure type** from the math modeling figure taxonomy (see below).
 3. **Panel map**: what each panel (a, b, c, ...) shows and what unique evidence it carries.
 4. **Data source**: exact path to the CSV/mat/json that provides the numbers.
@@ -204,6 +204,13 @@ if not render_check_and_log(fig, saved_paths[0]):
     # Do NOT promote to Type 3. Fix and re-render.
     raise RuntimeError("render_check failed — see paper/figures/render_check.log")
 ```
+
+**Two gates guard promotion to `paper/figures/` (Type 3/4), not one:**
+
+1. **render_check gate** (mechanical, AI-owned): `render_check_and_log()` must return True. This is the figure's pixel correctness — fully the AI's job.
+2. **claim-confirmation gate** (judgment-bearing, human-owned): the figure's **Core claim** (figure-contract step 1) must come from a human-confirmed source and must NOT still be an `[AI-DRAFT` / `[MODELER INPUT NEEDED` sentinel. A figure whose claim is unconfirmed may be rendered into the experiment/robustness round folder for review, but MUST NOT be copied to `paper/figures/`. A surviving sentinel on the claim is a GATE FAIL — exactly like a surviving `<<<HUMAN>>>` sentinel in a C-layer decision artifact; `completeness-auditor` treats both as "not done".
+
+Both gates must pass before promotion. render_check passing does not authorize promotion if the claim is still a sentinel; a confirmed claim does not authorize promotion if render_check fails.
 
 **Tuning guidance**:
 - `min_fontsize_pt=6.5` for journal-column figures, `min_fontsize_pt=9` for slides.
@@ -515,6 +522,7 @@ import matplotlib.pyplot as plt
 
 Before handing off a figure:
 - [ ] Core claim is clear and the figure defends it.
+- [ ] **Core claim is human-confirmed** — pulled from the modeler's confirmed `core_claim` in `qx_figure_table_plan.md` or a `DECIDED` decision-log record, NOT authored here. No surviving `[AI-DRAFT` / `[MODELER INPUT NEEDED` sentinel on the claim (a surviving sentinel blocks promotion to `paper/figures/`, exactly like `<<<HUMAN>>>` blocks a C-layer gate).
 - [ ] Figure type from the math modeling taxonomy is correctly identified.
 - [ ] Every panel carries unique evidence (anti-redundancy passed).
 - [ ] SVG saved with `svg.fonttype = 'none'` (editable text).
@@ -557,6 +565,7 @@ Use when:
 ## Rules
 
 - Start from the figure contract — do not code before defining the claim.
+- **The figure's Core claim is the modeler's judgment, not the AI's.** Do NOT originate the one-sentence conclusion a figure defends — pull it from a human-confirmed source (the planner's confirmed `core_claim`, or a `DECIDED` decision-log record). When no confirmed claim exists, mark it `[AI-DRAFT — modeler must confirm: …]` (your draft, which the human must keep or change) or `[MODELER INPUT NEEDED: …]` (no draft to copy — the human supplies it). Rendering correctly is yours; deciding what the figure asserts is true is theirs.
 - Use Python/matplotlib unless the project's implementation target is MATLAB.
 - For MATLAB users: adapt the logic to MATLAB's `plot`, `bar`, `heatmap`, etc. The conceptual rules (claim-first, panel logic, color consistency) still apply.
 - Primary output is always SVG + PNG.
@@ -566,4 +575,4 @@ Use when:
 - Do not create decorative figures that don't support a specific claim.
 - Close every figure after saving.
 - For multi-panel figures, the hero panel should be visually dominant.
-- **Every Type 3 (论文图) and Type 4 (附录图) figure MUST pass `render_check_and_log()` before being copied to `paper/figures/`.** A failed render_check blocks promotion. This is enforced by Gate G5 (paper-section-writer) and Gate G6 (audit layer). Type 1 (诊断图) and Type 2 (对比图 internal-use) are exempt unless explicitly promoted to paper.
+- **Every Type 3 (论文图) and Type 4 (附录图) figure MUST clear BOTH promotion gates before being copied to `paper/figures/`:** (1) `render_check_and_log()` returns True, and (2) the Core claim is human-confirmed — no surviving `[AI-DRAFT` / `[MODELER INPUT NEEDED` sentinel on the claim. A failed render_check OR an unconfirmed claim blocks promotion. This is enforced by Gate G5 (paper-section-writer) and Gate G6 (audit layer); `completeness-auditor` treats a surviving claim sentinel as "not done" just like it treats a surviving `<<<HUMAN>>>`. Type 1 (诊断图) and Type 2 (对比图 internal-use) are exempt unless explicitly promoted to paper.

@@ -60,14 +60,15 @@ Use or request the following:
 
 3. Decompose every subquestion.
    - Assign each subquestion an ID such as `Q1`, `Q2`, `Q3`.
-   - For each subquestion, extract input, processing need, expected output, constraints, dependencies, and evaluation criteria.
+   - For each subquestion, extract input, processing need, expected output, constraints, and dependencies (these are mechanical — AI-owned).
+   - Do NOT author the `evaluation_criteria` / success-definition. The rubric a judge grades against — what counts as a good answer — is a modeling judgment, not a parse. Emit it as a `[MODELER INPUT NEEDED: in the team's words, what makes an answer to this subquestion good?]` placeholder for the human to fill. The AI must not invent the rubric.
    - Mark whether a subquestion depends on the result of an earlier subquestion.
 
 4. Extract variables, parameters, and relationships at a preliminary level.
    - List observable quantities.
    - List controllable quantities if the task appears decision-oriented.
    - List external parameters if they are given or must be estimated.
-   - List obvious relationships, rules, conservation constraints, trends, or causal hints.
+   - List obvious relationships, rules, conservation constraints, trends, or causal hints — but a mechanism claim (causal link, conservation law) is a modeling judgment, not a parse. Wrap each proposed relationship as `[AI-DRAFT — modeler must confirm: <relationship>]` so the human ratifies or rewrites it before it is treated as settled.
    - Do not finalize mathematical notation yet.
 
 5. Identify ambiguity and risk.
@@ -138,7 +139,7 @@ Prefer this JSON-compatible structure for `workspace/problem/problem-parser/prob
       ],
       "depends_on": [],
       "evaluation_criteria": [
-        "How the result may be judged or checked."
+        "[MODELER INPUT NEEDED: in the team's words, what makes an answer to this subquestion good?]"
       ]
     }
   ],
@@ -174,7 +175,7 @@ Prefer this JSON-compatible structure for `workspace/problem/problem-parser/prob
     "unknowns_to_estimate": []
   },
   "preliminary_relationships": [
-    "Qualitative or explicit relationships found in the problem."
+    "[AI-DRAFT — modeler must confirm: qualitative or explicit relationship found in the problem.]"
   ],
   "dependencies": [
     {
@@ -210,6 +211,9 @@ Also produce `workspace/problem/problem-parser/problem_parse.md` with the same f
 - Do not merge multiple subquestions into one vague task.
 - Preserve the wording and intent of the original problem as much as possible.
 - Mark uncertainty explicitly.
+- Do not author the `evaluation_criteria` / success-definition. The rubric a judge grades against is the modeler's, not the parser's — emit it as `[MODELER INPUT NEEDED: in the team's words, what makes an answer to this subquestion good?]` and leave it for the human. The AI provides no draft to copy here.
+- Do not finalize any `preliminary_relationships` (causal links, conservation laws, mechanism claims) on the human's behalf. Draft each one wrapped as `[AI-DRAFT — modeler must confirm: <relationship>]` so the human ratifies or rewrites it.
+- A surviving `[AI-DRAFT` or `[MODELER INPUT NEEDED` sentinel in a finalized parse artifact is a GATE FAIL — exactly like a `<<<HUMAN>>>` sentinel in a decision artifact. The artifact is not "ready" until the human has replaced every such span. Do not strip a sentinel yourself to make the gate pass.
 
 # Verification
 
@@ -223,6 +227,9 @@ Before handing off, verify:
 - Dependencies between subquestions are identified.
 - Ambiguities and risk flags are listed instead of being hidden.
 - No model has been selected prematurely.
+- Each subquestion's `evaluation_criteria` carries a `[MODELER INPUT NEEDED: ...]` placeholder until the human supplies the rubric; the AI has authored none of it.
+- Every `preliminary_relationships` entry is wrapped as `[AI-DRAFT — modeler must confirm: ...]` and none has been finalized as settled fact.
+- The artifact is handed off as a DRAFT while any `[AI-DRAFT` or `[MODELER INPUT NEEDED` sentinel survives. A surviving sentinel is a GATE FAIL (treated like `<<<HUMAN>>>` in decision artifacts); the parse is "ready" only after the human has replaced every such span. Never strip a sentinel to force the gate.
 - The next skill is `problem-classifier`.
 
 # Failure modes
@@ -300,8 +307,7 @@ Output:
       "constraints": [],
       "depends_on": [],
       "evaluation_criteria": [
-        "indicator consistency",
-        "ranking interpretability"
+        "[MODELER INPUT NEEDED: in the team's words, what makes an answer to this subquestion good?]"
       ]
     },
     {
@@ -323,8 +329,7 @@ Output:
         "Q1"
       ],
       "evaluation_criteria": [
-        "prediction error",
-        "trend plausibility"
+        "[MODELER INPUT NEEDED: in the team's words, what makes an answer to this subquestion good?]"
       ]
     },
     {
@@ -348,8 +353,7 @@ Output:
         "Q2"
       ],
       "evaluation_criteria": [
-        "feasibility",
-        "resource efficiency"
+        "[MODELER INPUT NEEDED: in the team's words, what makes an answer to this subquestion good?]"
       ]
     }
   ],

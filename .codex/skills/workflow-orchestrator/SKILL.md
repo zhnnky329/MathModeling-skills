@@ -117,9 +117,9 @@ Each gate is a hard checkpoint with three explicit parts. Do not skip a gate; do
 ## Gate G1: PROBLEM_PARSED
 - **enter_condition**: User provides a problem statement (file or text).
 - **pass_criteria**:
-  - `planning/parse/` exists with goals / objects / constraints / data / outputs / subquestions filled.
-  - `planning/classification/` exists with primary task type per Qx.
-- **fail_fallback**: Route to `problem-parser` then `problem-classifier`. Do not advance to G2.
+  - Mechanical: `planning/parse/` exists (goals / objects / constraints / data / outputs / subquestions filled); `planning/classification/` exists with an `ai_suggested_type` per Qx.
+  - Human (B-layer sentinel sweep): no surviving `[MODELER INPUT NEEDED` / `[AI-DRAFT` sentinel in the load-bearing judgment fields — per Qx the `evaluation_criteria` (the success rubric, problem-parser), the `modeler_chosen_type` + `framing_rationale` (problem-classifier), and any proposed causal/conservation `relationships`. A surviving sentinel means the human hasn't confirmed the framing → G1 not passed.
+- **fail_fallback**: Mechanical gaps → `problem-parser` / `problem-classifier`. Surviving sentinels → route back to the modeler (not a skill) to supply the rubric / confirm the type. Do not advance to G2; the orchestrator never fills these fields itself.
 
 ## Gate G2: METHOD_VALIDATED  (load-bearing — most-violated boundary)
 This is the method→code boundary. Most "漂亮方案到代码阶段才崩" issues happen because G2 was treated as soft.
@@ -176,10 +176,9 @@ This is the results→paper boundary. Most "论文里数字与最新 results 错
 ## Gate G5: PAPER_SECTION_READY
 - **enter_condition**: G4 passed; `paper/sections/qx.tex` exists.
 - **pass_criteria**:
-  - Section meets the word-count floor declared by `paper-section-writer` (per section type).
-  - Every numerical result in the section has ≥ 3 discussion dimensions covered (sensitivity / physical meaning / baseline comparison).
-  - Every figure referenced exists on disk and has passed `math-figure-generator`'s render-check.
-- **fail_fallback**: Route to `paper-section-writer` with the missing-dimensions list. If figures fail render-check, route to `math-figure-generator`.
+  - Mechanical: section meets the word-count floor (per section type); every numerical result has ≥ 3 discussion dimensions covered; every figure exists on disk and passed `math-figure-generator`'s render-check.
+  - Human (B-layer): the **physical-meaning** discussion dimension is human-authored — its `[MODELER INPUT NEEDED]` sentinel has been replaced; a surviving sentinel means that dimension does NOT count toward the ≥3 floor. The three paper seeds (`key_result_claim`, `contribution_claim`, `why_this_method`) are filled (no surviving sentinel), and `why_this_method` carries a `<!-- from Qx-D0n -->` provenance marker tracing to the decision log. Every Type 3 figure's `core_claim` is human-confirmed (no surviving sentinel).
+- **fail_fallback**: Missing dimensions / under floor → `paper-section-writer`. Surviving sentinel in physical-meaning or a paper seed → route back to the modeler. Figures failing render-check or with an unconfirmed `core_claim` → `math-figure-generator` (render) / `figure-table-planner` (claim).
 
 ## Gate G6: AUDIT_LAYER_PASSED  (the final gate before assembly)
 This is the independent-audit gate. No single skill's "完成" claim can bypass it.
