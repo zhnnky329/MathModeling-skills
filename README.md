@@ -19,6 +19,9 @@
 
 ---
 
+> [!NOTE]
+> **Update — this is now an assistant, not an autopilot.** The pipeline used to run the whole contest end-to-end and leave you clicking "confirm" — which is ghost-writing, not what contests allow or what you learn anything from. So the graded modeling judgments (which method and why, whether a result is good, what a number means) are now **yours**, enforced by two human gates (G2.5, G4.5). Skills grew 24 → 28. The old full-auto pipeline is preserved untouched on the [**`legacy-full-auto`**](https://github.com/zhnnky329/MathModeling-skills/tree/legacy-full-auto) branch — switch to it if you want the previous behavior.
+
 > A set of skills I built for math-modeling contests after losing too many hours to the same kinds of mistakes. They sit behind a set of hard gates — two of which are yours to decide, not the AI's — and a 3-auditor layer that has the last word on whether the paper is ready to hand in. The point isn't to automate more — it's that no step gets to quietly skip a check. Numbers in the paper trace back to a frozen snapshot. Reviewers leave a file on disk. No skill gets to say "done" on its own.
 >
 > The split it's built on: **the AI owns the mechanical correctness; you own the modeling judgment.** It runs the PoCs, freezes the numbers, render-checks the figures, audits consistency. It does *not* choose your method, decide what a number means, or write the reason you chose what you chose — those are yours, and the gates fail on an empty or copy-pasted answer. It's an assistant, not a ghost-writer. (More on that in [What this isn't](#what-this-isnt).)
