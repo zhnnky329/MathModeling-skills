@@ -20,24 +20,24 @@
 ---
 
 > [!NOTE]
-> **Update — this is now an assistant, not an autopilot.** The pipeline used to run the whole contest end-to-end and leave you clicking "confirm" — which is ghost-writing, not what contests allow or what you learn anything from. So the graded modeling judgments (which method and why, whether a result is good, what a number means) are now **yours**, enforced by two human gates (G2.5, G4.5). Skills grew 24 → 28. The old full-auto pipeline is preserved untouched on the [**`legacy-full-auto`**](https://github.com/zhnnky329/MathModeling-skills/tree/legacy-full-auto) branch — switch to it if you want the previous behavior.
+> **Update — this is now an assistant, not an autopilot.** The earlier version ran the whole contest end to end and left the user only clicking "confirm", which is closer to ghost-writing: it does not fit most contests' rules, and it does little for your own skills. This version hands the key judgments back to the user — the AI returns to a supporting role, and you stay in charge. The skill count went from 24 to 28. The previous full-auto version is kept intact on the [**`legacy-full-auto`**](https://github.com/zhnnky329/MathModeling-skills/tree/legacy-full-auto) branch; switch to it if you prefer the old behavior.
 
-> A set of skills I built for math-modeling contests after losing too many hours to the same kinds of mistakes. They sit behind a set of hard gates — two of which are yours to decide, not the AI's — and a 3-auditor layer that has the last word on whether the paper is ready to hand in. The point isn't to automate more — it's that no step gets to quietly skip a check. Numbers in the paper trace back to a frozen snapshot. Reviewers leave a file on disk. No skill gets to say "done" on its own.
+> A set of skills for math-modeling contests, built around the mistakes that tend to cost the most time. They sit behind a set of hard gates — two of which the user decides, not the AI — and a three-auditor layer that has the final say on whether the paper is ready to submit. The aim is not to automate more, but to make sure no step can quietly skip a check: every number in the paper traces back to a frozen snapshot, every reviewer leaves a file on disk, and no skill marks itself as "done".
 >
-> The split it's built on: **the AI owns the mechanical correctness; you own the modeling judgment.** It runs the PoCs, freezes the numbers, render-checks the figures, audits consistency. It does *not* choose your method, decide what a number means, or write the reason you chose what you chose — those are yours, and the gates fail on an empty or copy-pasted answer. It's an assistant, not a ghost-writer. (More on that in [What this isn't](#what-this-isnt).)
+> The principle it is built on: **the AI owns mechanical correctness; the user owns modeling judgment.** It runs the PoCs, freezes the numbers, render-checks the figures, and audits consistency. It does not choose the method, decide what a number means, or write the reasoning behind a choice — those belong to the user, and the gates fail on an empty or copy-pasted answer.
 >
-> If you find a bug or want to tell me how it went in a real contest, drop me a line at **[zjzhang0424@gmail.com](mailto:zjzhang0424@gmail.com)** — or open an issue.
+> Found a bug, or want to share how it went in a real contest? Email **[zjzhang0424@gmail.com](mailto:zjzhang0424@gmail.com)**, or open an issue.
 
 ## Why this exists
 
-When a team loses a modeling contest, it's almost never because they didn't know enough models. It's usually one of these:
+When a team loses a modeling contest, it is rarely because they did not know enough models. It is usually one of these:
 
 - They misread what the problem was actually asking.
-- They skipped the baseline and went straight to a complicated model nobody could explain later.
-- The paper says some number that no script in the repo actually outputs.
-- Somebody fixed a bug at 3am, and the paper still has the old numbers from before the fix.
+- They skipped the baseline and went straight to a complex model that nobody could explain later.
+- The paper states a number that no script in the repo actually produces.
+- A bug gets fixed late in the process, but the paper still carries the numbers from before the fix.
 
-These are workflow problems, not modeling problems. The skills here are arranged so those specific failures get hard to hide.
+These are workflow problems, not modeling problems. The skills here are arranged to make these failures hard to hide.
 
 ## What's different
 
@@ -74,66 +74,66 @@ workflow-orchestrator (env ping at session start)
  ▼  final assembly
 ```
 
-★ = where most pipelines fall apart: G2 catches a method that looked elegant in a meeting but doesn't run on the real data; G4 catches a late-night bug fix that left the paper quoting the old number. 👤 = the two gates that are *yours*, not the AI's — the method choice (G2.5) and the result verdict (G4.5) can't pass on an empty or copy-pasted answer.
+★ marks the two stages where pipelines most often break down: G2 stops a method that looks good on paper but won't run on the real data; G4 stops a bug fix from leaving an outdated number in the paper. 👤 marks the two gates the user decides rather than the AI — the method choice (G2.5) and the result verdict (G4.5); neither passes on an empty or copy-pasted answer.
 
-## The skills, by where they sit in the pipeline
+## The skills, by stage
 
-### Stage 1 — getting the basics straight
+### Stage 1 · Groundwork
 
-Before any modeling happens, get the foundation right: what the problem is actually asking, what kind of problem each subquestion is, what data you've got, and a single symbol table everyone agrees on.
+Before any modeling begins, get the basics in order: what the problem is asking, what type each subquestion is, what data is available, and a single symbol table the whole team shares.
 
-- **`workflow-orchestrator`** — Keeps track of where each subquestion is, runs the gate checks, pings your environment at session start.
-- **`problem-parser`** — Reads the problem into goals / objects / constraints / data / outputs / subquestions. Writes to `planning/parse/`.
-- **`problem-classifier`** — Tags each subquestion with a task type. `planning/classification/`.
-- **`related-paper-analyzer`** — Collects relevant papers. Won't make up citations.
-- **`symbol-table-builder`** — One shared symbol table for everyone. `planning/symbol_table.md`.
-- **`model-assumptions-builder`** — Separates the assumptions you actually need from the ones you're making to simplify. `planning/model_assumptions.md`.
-- **`data-auditor-cleaner`** — Audits raw data, produces a cleaned copy and a report. Treats `data_raw/` as read-only. **Also has a step 0 that confirms which attachment belongs to which subquestion before anything else** — turns out this matters more than you'd think.
+- **`workflow-orchestrator`** — Tracks where each subquestion stands, runs the gate checks, and confirms the environment at the start of a session.
+- **`problem-parser`** — Breaks the problem into goals / objects / constraints / data / outputs / subquestions, written to `planning/parse/`.
+- **`problem-classifier`** — Labels each subquestion with a task type, written to `planning/classification/`.
+- **`related-paper-analyzer`** — Finds relevant literature without fabricating citations.
+- **`symbol-table-builder`** — Maintains one shared symbol table, `planning/symbol_table.md`.
+- **`model-assumptions-builder`** — Separates necessary assumptions from those made only for simplification, `planning/model_assumptions.md`.
+- **`data-auditor-cleaner`** — Audits the raw data and produces a cleaned copy plus a report; the raw data under `data_raw/` stays read-only. Before cleaning, it confirms which attachment belongs to which subquestion, so the data is not used in the wrong place.
 
-### Stage 2 — method validation (Gate G2 ★)
+### Stage 2 · Method validation (Gate G2 ★)
 
-This is the boundary where most teams lose three days near the deadline. A method that looked great in a meeting turns out to be infeasible on the actual data, and now it's too late to switch.
+Teams often discover only near the deadline that a method they had counted on does not run on the real data, when it is too late to switch. This stage is meant to surface that early.
 
-- **`method-selector`** — Proposes 2–4 candidates per subquestion. **Each one ships with a runnable ≤30-line PoC and a real number from running it on the cleaned data.** If the PoC fails, the candidate is marked `[REJECTED]` and its script moved to `workspace/archived/`. It does **not** pick for you — it lays out the candidates and stops; you commit the choice and write why (Gate G2.5). Outputs: `methods/Qx/qx_method_candidates.md` + `methods/Qx/poc/*`.
-- **`decision-prompt-builder`** — At each judgment gate, asks you the 2–3 questions only you can answer (framed as trade-offs), before the AI shows its suggestion — so you decide, not rubber-stamp. Used here and at every later human gate.
-- **`modeler-decision-logger`** — The decision-side `frozen_numbers.json`: collects your committed decisions into one append-only log. Every "why we chose X" sentence in the paper traces back to it, so the AI can't quietly re-author your reasoning.
+- **`method-selector`** — Proposes 2–4 candidate methods per subquestion, each with a PoC under 30 lines that produces a concrete result on the real cleaned data. Candidates whose PoC fails are marked `[REJECTED]` and moved to `workspace/archived/`. It does not choose for the user; it lays out the candidates and their feasibility, and the user records which one and why at Gate G2.5. Outputs: `methods/Qx/qx_method_candidates.md` and `methods/Qx/poc/*`.
+- **`decision-prompt-builder`** — At each decision point, it first poses 2–3 trade-off questions that only a person can answer, then gives the AI's suggestion, so the decision stays with the user. Used at every gate the user owns.
+- **`modeler-decision-logger`** — A decision-level counterpart to `frozen_numbers.json`: it records the user's decisions in an append-only log. Every "why this method" statement in the paper must trace back to it, and the AI may not rewrite the reasoning on the user's behalf.
 
-### Stage 3 — code, then review (Gate G3)
+### Stage 3 · Code and review (Gate G3)
 
-Write the code, then actually review it. The review is a file on disk, not a sentence in chat.
+Write the code, then review it; the review is recorded as a file on disk, not a remark in chat.
 
-- **`model-code-analyzer`** — Plans the `experiments/roundN/` folder layout and the `run_summary.json` schema before any code is written.
-- **`python-model-code-generator`** — Generates `.py` when the target is `python`. Fixed `SEED = 2026`.
-- **`matlab-model-code-generator`** — Generates `.m` for MATLAB / 北太天元. No Live Scripts, no App Designer, no anything that won't run on the contest machine.
-- **`code-reviewer`** — Looks at the script type, hands off to the right language-specific reviewer.
-- **`python-code-reviewer`** — Writes `code/Qx/reviews/qx_python_review.md` with ≥ 5 specific things that were checked, each citing file:line. Also lists every inequality constraint in a small table so a human can scan whether the direction is right.
-- **`matlab-code-reviewer`** — Same idea for `code/matlab/Qx/reviews/qx_matlab_review.md`.
+- **`model-code-analyzer`** — Plans the `experiments/roundN/` layout and the `run_summary.json` fields before any code is written.
+- **`python-model-code-generator`** — Generates `.py` when the target is `python`, with a fixed `SEED = 2026`.
+- **`matlab-model-code-generator`** — Generates `.m` for MATLAB / 北太天元, avoiding Live Scripts, App Designer, and other features the contest environment may not support.
+- **`code-reviewer`** — Detects the script language and routes to the matching reviewer.
+- **`python-code-reviewer`** — Writes `code/Qx/reviews/qx_python_review.md` with at least 5 specific checks, each citing file:line, and lists every inequality constraint in a table so its direction can be verified.
+- **`matlab-code-reviewer`** — The same for `code/matlab/Qx/reviews/qx_matlab_review.md`.
 
-### Stage 4 — results, robustness, figures, freeze (Gate G4 ★)
+### Stage 4 · Results, robustness, figures, freeze (Gate G4 ★)
 
-Take the raw experiment outputs and turn them into two things: a package the writer can read, and a frozen JSON of every number that will appear in the paper. After the freeze, if you fix a bug and a number changes, you have to log the change and re-freeze. Nobody silently updates the snapshot.
+Turn the raw experiment outputs into two things: a package the writer can use directly, and a frozen JSON of every number that will appear in the paper. After the freeze, any change to a number must be logged and re-frozen rather than edited directly.
 
-- **`result-report-generator`** — Compares methods per round, then a final analysis. Methods get tagged `[CHOSEN] / [BACKUP] / [REJECTED]`. Rejected ones move to `workspace/archived/`.
-- **`robustness-checker`** — Sensitivity / error / baseline comparison. Writes `robustness/Qx/qx_robustness_report.md` with ≥ 5 things checked.
-- **`final-method-explainer`** — A full writeup of the method you actually committed to. `methods/Qx/qx_final_method_explanation.md`.
-- **`figure-table-planner`** — Sorts figures into four types: 1 diagnostic, 2 comparison, 3 paper, 4 appendix. Type 1 never reaches the paper.
-- **`math-figure-generator`** — Publication-quality matplotlib. Every figure has to pass `render_check_and_log()` (no text overlap, no text out of canvas, no font under 6.5pt) before it's allowed to become a Type 3 figure.
-- **`solution-package-builder`** — Builds the package the writer reads, and emits `results/Qx/reports/frozen_numbers.json`. Don't edit that file by hand.
+- **`result-report-generator`** — Produces a multi-method comparison report and a final analysis; methods are tagged `[CHOSEN] / [BACKUP] / [REJECTED]`, and rejected ones move to `workspace/archived/`.
+- **`robustness-checker`** — Runs sensitivity, error, and baseline comparisons; writes `robustness/Qx/qx_robustness_report.md` with at least 5 checks.
+- **`final-method-explainer`** — Writes the full explanation of the selected method, `methods/Qx/qx_final_method_explanation.md`.
+- **`figure-table-planner`** — Sorts figures into four types: 1 diagnostic, 2 comparison, 3 paper, 4 appendix; diagnostic figures never enter the paper.
+- **`math-figure-generator`** — Produces figures with matplotlib; each must pass `render_check_and_log()` (checking text overlap, out-of-canvas text, and fonts under 6.5pt) before it can be designated a paper figure.
+- **`solution-package-builder`** — Builds the writer's package and emits `results/Qx/reports/frozen_numbers.json`, which should not be edited by hand.
 
-### Stage 5 — writing the paper, then the auditors (Gates G5 + G6)
+### Stage 5 · Paper writing and audits (Gates G5 + G6)
 
-The writer drafts the paper, sourcing every number from the frozen JSON. Then three separate auditors check it: one for cross-file consistency, one for whether every reviewer actually left a file, one for end-to-end QA. If any of the three fails, the paper doesn't ship.
+The writer drafts the paper from the package and the frozen snapshot. Three independent auditors then check it: cross-file consistency, whether every reviewer file is present, and overall QA. If any one fails, the paper cannot be submitted.
 
-- **`paper-section-writer`** — Drafts sections from the package. Each section has a word-count floor. Every number you cite needs to be discussed from at least 3 of: sensitivity, physical meaning, baseline comparison, cross-subquestion consistency, uncertainty.
-- **`paper-polisher`** — Tense, hedging, overclaiming, formula consistency within the document.
-- **`reference-manager`** — BibTeX, plus a check that the citations actually exist. Fabricated citations are blocking.
-- **`consistency-auditor`** — Goes through the paper and checks every number, file name, and symbol matches what's in `frozen_numbers.json`, the actual files on disk, and the symbol table.
-- **`completeness-auditor`** — Checks that every `*_review.md` / `*_audit.md` that should exist actually exists, with at least 5 pass items, not stale.
-- **`quality-assurance-auditor`** — Workflow completeness, the three critical rules, anti-fabrication. The final gate — only signs off when the other two auditors have also signed off.
+- **`paper-section-writer`** — Drafts sections from the package, with a word-count floor per section; every numerical result must be discussed from at least three of: sensitivity, physical meaning, baseline comparison, cross-subquestion consistency, uncertainty.
+- **`paper-polisher`** — Checks tense, hedging, overclaiming, and formula consistency within the document.
+- **`reference-manager`** — Generates BibTeX and verifies that citations are real; fabricated citations are blocking.
+- **`consistency-auditor`** — Compares every number, file name, and symbol in the paper against `frozen_numbers.json`, the files on disk, and the symbol table.
+- **`completeness-auditor`** — Checks that every expected `*_review.md` / `*_audit.md` exists, meets the 5-pass-item bar, and is not stale.
+- **`quality-assurance-auditor`** — Checks workflow completeness, the three core rules, and anti-fabrication; as the final gate, it signs off only after the other two auditors have.
 
 ## Installing
 
-Most people clone this into the folder where they'll do the actual contest work, so `CLAUDE.md` / `AGENTS.md` / `.claude/settings.json` apply automatically. You can also install the skills globally if you'd rather.
+The recommended setup is to clone this into the folder where you'll do the contest work, so `CLAUDE.md` / `AGENTS.md` / `.claude/settings.json` apply automatically. A global install is also possible.
 
 ### Option A — clone into your contest project (recommended)
 
@@ -148,7 +148,7 @@ mv .skills-tmp/docs ./skills-docs
 rm -rf .skills-tmp
 ```
 
-Open the folder in **Claude Code** or **Codex** — the 28 skills get picked up automatically. First message:
+Open the folder in **Claude Code** or **Codex**, and the 28 skills are picked up automatically. An opening message:
 
 ```text
 Read CLAUDE.md, then run workflow-orchestrator. Our contest problem is in workspace/problem/. Follow the gates in order and do not skip.
@@ -166,7 +166,7 @@ for d in .claude/skills/*/; do
 done
 ```
 
-Restart Claude Code. The skills are available in any project now. You still want `CLAUDE.md` and `.claude/settings.json` in each contest project — that's where the gate rules and guardrails live.
+Restart Claude Code, and the skills are available in any project. `CLAUDE.md` and `.claude/settings.json` still need to be in each contest project, since that is where the gate rules and guardrails live.
 
 ### Option C — install globally for Codex
 
@@ -180,25 +180,25 @@ for d in .codex/skills/*/; do
 done
 ```
 
-Restart Codex. Drop `AGENTS.md` into each contest project for the gate rules.
+Restart Codex, and place `AGENTS.md` in each contest project for the gate rules.
 
 ### Updating later
 
 ```bash
 cd MathModeling-skills && git pull
-# then re-run the cp loop from B or C if you went global
+# then re-run the cp loop from B or C if you installed globally
 ```
 
-### What to say first
+### Opening prompt
 
-Use the initial prompt for a fresh conversation:
+Send the initial prompt at the start of a new conversation:
 
 - English: [Initial Prompt.md](Initial%20Prompt.md)
 - 中文: [Initial Prompt-zh.md](Initial%20Prompt-zh.md)
 
-### A few follow-up prompts that come up a lot
+### Common follow-up prompts
 
-- Coming back to it: `Q2 has experiment report round1 done. Let workflow-orchestrator decide whether to iterate or lock the method.`
+- Resuming: `Q2 has experiment report round1 done. Let workflow-orchestrator decide whether to iterate or lock the method.`
 - Just robustness: `Use robustness-checker for Q1. Inputs in results/Q1/reports/, baseline in results/Q1/experiments/round2/. Do not rerun the main model.`
 - Triggering the audit layer: `All Qx sections drafted. Run consistency-auditor, then completeness-auditor, then quality-assurance-auditor.`
 
@@ -242,27 +242,27 @@ A few hard rules: `data_raw/` is read-only. Every paper number lives in `frozen_
 - It won't write a number into the paper before some script has produced it.
 - It won't claim a model is better than a baseline without a baseline and a robustness check actually existing.
 - It doesn't touch your raw data.
-- **It's not a ghost-writer.** The things a judge actually grades and a student actually needs to learn — which method and why, what the numbers mean, how you framed the assumptions, what your contribution is — come from you. The AI drafts the scaffolding around them and marks every judgment span as needing your input; the gates won't pass on an empty box or text copy-pasted from the AI's own suggestion. If you try to let it do all of it, the pipeline blocks before submission.
-- It doesn't replace your judgment. You still make the modeling calls.
+- **It's not a ghost-writer.** The parts a judge grades and a student needs to learn — which method and why, what the numbers mean, how the assumptions are framed, what the contribution is — come from the user. The AI drafts the scaffolding around them and marks every judgment span as needing input; the gates do not pass on an empty box or text copy-pasted from the AI's own suggestion. If everything is left to the AI, the pipeline blocks before submission.
+- It does not replace your judgment; the modeling decisions remain yours.
 
 > **⚠️ Your contest's rules are yours to check.** AI-use policies differ sharply between contests and change every year — COMAP (MCM/ICM) currently allows disclosed AI assistance; CUMCM and several Chinese contests are originality-first and may not permit it at all. This repo encodes no contest's authoritative policy; its defaults aim at the strictest plausible reading. Every run can emit an `ai_use_disclosure.md` recording what was AI-drafted vs human-authored, so you can disclose honestly where required. Read your contest's current official rules before you rely on this — the final compliance call is yours.
 
-## Docs you might actually need
+## Documentation
 
 - [CLAUDE.md](CLAUDE.md) — the project rules (gates, audit layer, the frozen-numbers convention).
-- [AGENTS.md](AGENTS.md) — same thing, Codex side.
+- [AGENTS.md](AGENTS.md) — the Codex-side equivalent.
 - [docs/implementation-targets.md](docs/implementation-targets.md) — choosing `python` vs `matlab`.
-- [docs/matlab-beita-tianyuan-guidelines.md](docs/matlab-beita-tianyuan-guidelines.md) — keeping MATLAB code contest-machine-friendly.
+- [docs/matlab-beita-tianyuan-guidelines.md](docs/matlab-beita-tianyuan-guidelines.md) — keeping MATLAB code runnable in the contest environment.
 - Per-skill: [.claude/skills/](.claude/skills/) · [.codex/skills/](.codex/skills/).
 
-## Getting in touch
+## Contact
 
-If you found a bug, have an idea, or just want to tell me how it went in a real contest, my email is **[zjzhang0424@gmail.com](mailto:zjzhang0424@gmail.com)**. Issues and PRs welcome too.
+For a bug, an idea, or feedback from a real contest, email **[zjzhang0424@gmail.com](mailto:zjzhang0424@gmail.com)**. Issues and PRs are welcome too.
 
-## Thanks to
+## Acknowledgments
 
-- **[nature-skills](https://github.com/Yuan1z0825/nature-skills)** — `math-figure-generator` borrows the figure-contract idea, the semantic palette, the multi-panel layout thinking, and the SVG-first export from `nature-figure`. By [Yuan1z0825](https://github.com/Yuan1z0825), MIT.
-- **[figures4papers](https://github.com/ChenLiu-1996/figures4papers)** — the production scripts that `nature-figure` is built on.
+- **[nature-skills](https://github.com/Yuan1z0825/nature-skills)** — `math-figure-generator` draws on `nature-figure`'s figure contract, semantic palette, multi-panel layout, and SVG-first export. By [Yuan1z0825](https://github.com/Yuan1z0825), MIT.
+- **[figures4papers](https://github.com/ChenLiu-1996/figures4papers)** — the production-grade plotting scripts that `nature-figure` is based on.
 
 ## License
 
