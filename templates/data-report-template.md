@@ -1,13 +1,32 @@
-# Data Report Template
+# Data Profile
 
-## Data overview
+## Scope and lineage
 
-Add a short summary of the available input data.
+- Question and required outputs:
+- Raw inputs:
+- Cleaned outputs:
+- Cleaning rules with affected-row counts:
 
-## Data quality notes
+## Quality and coverage
 
-Record missing values, anomalies, and cleaning decisions.
+| Risk | Measure | Value | Consequence | Repair or limitation |
+|---|---|---:|---|---|
+| Missingness |  |  |  |  |
+| Duplicates / anomalies |  |  |  |  |
+| Coverage |  |  |  |  |
+| Class or group imbalance |  |  |  |  |
+| Weight / demand concentration |  |  |  |  |
+| Effective sample size |  |  |  |  |
 
-## Ready-for-modeling status
+## Method readiness
 
-State whether the dataset is ready for the next workflow step.
+- Usable baseline supported: yes / no, with reason
+- Main-candidate data assumptions supported: yes / no, with reason
+- Scale or runtime risk:
+- Risks that must enter `risk_probe_summary.json`:
+
+## Status
+
+`READY`, `READY_WITH_LIMITATIONS`, or `BLOCKED`.
+
+Save canonical machine evidence in `workspace/data_clean/data_profile.json`. Do not create a separate prose log when this profile already records the fact.

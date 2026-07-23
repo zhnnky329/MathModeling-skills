@@ -1,417 +1,130 @@
 # MATLAB / 北太天元 Guidelines
 
-This document defines conservative MATLAB / 北太天元 compatibility rules for the `matlab` implementation target.
-
-The goal is to generate and review `.m` scripts that are likely to run in a contest environment and produce portable artifacts for downstream analysis and paper writing.
-
-## Target definition
-
-Use:
+Use `matlab` as the implementation target and record 北太天元 as a runtime constraint:
 
 ```json
 {
   "implementation": {
     "target": "matlab",
     "runtime_notes": [
-      "beita-tianyuan-compatible"
-    ]
+      "beita-tianyuan-compatible",
+      "avoid-heavy-toolboxes"
+    ],
+    "random_seed_required": true
   }
 }
 ```
 
-Do not create a separate `beita-tianyuan` target.
+Do not create a separate target or change the approved mathematical method to fit a favorite function.
 
-北太天元 should be handled as a MATLAB-compatible runtime requirement under the `matlab` target.
+## Scope and paths
 
-## Basic principle
-
-Write conservative MATLAB-compatible code.
-
-Prefer simple, readable, contest-friendly `.m` scripts over advanced language features, toolboxes, GUI tools, or environment-specific workflows.
-
-When uncertain whether a function is supported in 北太天元, choose a simpler implementation.
-
-## Recommended runtime notes
-
-For MATLAB / 北太天元 workflows, use runtime notes such as:
+After the human method choice, implement only the approved main and usable baseline. Add a conditional fallback only after its trigger is observed and activation is recorded.
 
 ```text
-beita-tianyuan-compatible
-avoid-heavy-toolboxes
-prefer-basic-matrix-and-table-operations
-avoid-live-scripts
-avoid-app-designer
-save-portable-artifacts
+code/matlab/Qx/
+├── qx_code_plan.md
+├── qx_baseline.m
+├── qx_main.m
+└── run_all.m          # optional
+
+results/Qx/experiments/roundN/
+├── figures/
+├── tables/
+├── metrics/
+└── run_summary.json
 ```
 
-These notes should be preserved by:
+Create `logs/` only for failures, warnings, or reproduction needs. Treat `workspace/data_raw/` as read-only and read cleaned inputs from `workspace/data_clean/`.
 
-```text
-model-code-generator
-matlab-model-code-generator
-code-reviewer
-matlab-code-reviewer
-```
-
-## File style
+## Conservative compatibility
 
 Prefer:
 
-- plain `.m` scripts
-- small helper functions only when useful
-- one script per subquestion when tasks are separable
-- clear execution order
-- optional `run_all.m` when it improves reproducibility
+- plain `.m` scripts and small explicit helpers;
+- basic matrix and table operations;
+- `readtable`, `readmatrix`, `writetable`, `writematrix`, `load`, and `save`;
+- `fullfile` for paths;
+- portable CSV, MAT, JSON, PNG, or PDF artifacts;
+- a fixed seed such as `rng(2026)` when randomness is used.
 
-Avoid:
+Avoid unless explicitly approved and verified:
 
-- Live Scripts
-- App Designer
-- GUI code
-- Simulink dependencies
-- undocumented helper functions
-- scripts that depend on manual workspace variables
-- scripts that only work after running commands interactively
+- Live Scripts, App Designer, GUI code, and Simulink;
+- optional or specialized toolboxes;
+- version-specific syntax;
+- interactive workspace state;
+- hard-coded local absolute paths.
 
-## Script location
+If a required function is unavailable, either implement a transparent compatible alternative without changing the model, or return to the method decision. Never claim an unexecuted run succeeded.
 
-Save MATLAB scripts under:
+## Array and table checks
 
-```text
-workspace/scripts/matlab/
-```
+Review:
 
-Examples:
+- row/column-vector orientation and matrix dimensions;
+- element-wise versus matrix operators;
+- 1-based indexing and loop boundaries;
+- column-name transformations;
+- units, indicator directions, missing-value handling, and preserved rows;
+- solver exit state and constraint feasibility where applicable.
 
-```text
-workspace/scripts/matlab/q1_baseline.m
-workspace/scripts/matlab/q1_main.m
-workspace/scripts/matlab/q1_improved.m
-workspace/scripts/matlab/run_all.m
-```
+Do not silently rename important fields, discard records, or hide assumptions inside code.
 
-## Data location
+## Directly comparable outputs
 
-Read cleaned data from:
+The baseline and main method must use the same input scope and produce the same output type or a justified comparison mapping. Save their artifacts separately:
 
 ```text
-workspace/data_clean/
+tables/qx_baseline_results.csv
+tables/qx_main_results.csv
+metrics/qx_comparison.json
 ```
 
-Do not modify:
+A diagnostic reference does not count as the baseline. Evaluate the output-degeneracy/concentration measures and fallback trigger specified by the code plan.
 
-```text
-workspace/data_raw/
-```
+## Run summary
 
-The raw data directory should be treated as read-only.
+`run_summary.json` records:
 
-If data cleaning is required, it should be handled by `data-auditor-cleaner` before MATLAB model code generation.
+- question, round, runtime, environment, and seed;
+- approved decision ID;
+- main and baseline roles, scripts, status, runtime, inputs, outputs, metrics, warnings, and errors;
+- direct comparison;
+- output concentration or degeneracy;
+- fallback trigger and activation state.
 
-## Output location
+Console output alone is not evidence.
 
-Save result artifacts under:
-
-```text
-workspace/results/
-```
-
-Save figure artifacts under:
-
-```text
-workspace/figures/
-```
-
-Recommended result formats:
-
-```text
-csv
-mat
-xlsx
-```
-
-Recommended figure formats:
-
-```text
-png
-pdf
-fig
-```
-
-Use `png` as the default paper-ready format.
-
-Use `.mat` when saving intermediate arrays, model variables, or data structures for later MATLAB review.
-
-## Path rules
-
-Use relative paths where practical.
-
-Recommended setup:
+## Minimal script pattern
 
 ```matlab
-dataDir = fullfile('workspace', 'data_clean');
-resultDir = fullfile('workspace', 'results');
-figureDir = fullfile('workspace', 'figures');
-
-if ~exist(resultDir, 'dir')
-    mkdir(resultDir);
-end
-
-if ~exist(figureDir, 'dir')
-    mkdir(figureDir);
-end
-```
-
-Avoid hard-coded local paths:
-
-```text
-/Users/...
-C:\Users\...
-D:\...
-```
-
-A script with local absolute paths is not portable and should be fixed during code review.
-
-## Data I/O
-
-Prefer common MATLAB-compatible data I/O functions:
-
-```text
-readtable
-writetable
-readmatrix
-writematrix
-load
-save
-```
-
-Use `readtable` / `writetable` for tabular data when field names matter.
-
-Use `readmatrix` / `writematrix` for purely numeric arrays.
-
-Use `load` / `save` for `.mat` artifacts.
-
-If a compatibility issue is suspected with a newer function, choose a simpler or more widely supported alternative.
-
-## Figure saving
-
-Figures should be saved explicitly.
-
-Example:
-
-```matlab
-figure;
-plot(x, y);
-xlabel('x');
-ylabel('y');
-title('Q1 result');
-grid on;
-saveas(gcf, fullfile(figureDir, 'q1_result.png'));
-close;
-```
-
-Do not rely only on visual display.
-
-A figure used in the paper must exist as a file under:
-
-```text
-workspace/figures/
-```
-
-## Randomness
-
-If randomness is used, set a fixed seed.
-
-Example:
-
-```matlab
-rng(2026);
-```
-
-Use fixed seeds for:
-
-- Monte Carlo simulation
-- random sampling
-- random initialization
-- stochastic optimization
-- train-test split if implemented in MATLAB
-
-Record the seed in comments or summary outputs.
-
-## Matrix and vector rules
-
-MATLAB uses 1-based indexing.
-
-Check:
-
-- row vs column vectors
-- matrix dimensions
-- vector transposes
-- element-wise operations
-- implicit expansion assumptions
-- division by zero
-- `NaN` and `Inf`
-- weight vector length
-- constraint matrix size
-
-Use element-wise operators when intended:
-
-```matlab
-.*
-./
-.^
-```
-
-Do not accidentally use matrix operations when element-wise operations are required.
-
-## Table and field rules
-
-When using tables:
-
-- keep field names aligned with the data audit report
-- do not silently rename important columns
-- do not silently drop rows or columns
-- preserve units and indicator directions
-- document missing-value handling
-
-If column names are not valid MATLAB identifiers, handle them explicitly and document the transformation.
-
-## Toolbox policy
-
-Avoid heavy toolbox dependencies unless explicitly approved in the method plan.
-
-Avoid by default:
-
-- App Designer
-- GUI code
-- Simulink
-- parallel toolbox
-- deep learning toolbox
-- symbolic toolbox
-- specialized optimization toolbox functions
-- version-specific MATLAB features
-- third-party packages
-
-Allowed by default:
-
-- basic matrix operations
-- basic statistics implemented manually if needed
-- basic plotting
-- table / matrix I/O
-- simple optimization logic implemented directly when practical
-
-If a method requires a toolbox-specific function, the skill should either:
-
-1. use a simpler compatible alternative, or
-2. stop and return to `method-selector` for method revision or explicit approval.
-
-## Optimization code
-
-For optimization problems, prefer transparent implementations when contest scale allows it.
-
-Acceptable approaches include:
-
-- direct formula computation
-- enumeration for small discrete cases
-- greedy baseline
-- manually implemented dynamic programming
-- manually implemented heuristic search
-- basic linear or integer programming only if supported and approved
-
-Avoid hiding the entire solution inside a toolbox call if the function may not exist in 北太天元.
-
-The paper should be able to explain the algorithm, not only the function call.
-
-## Baseline and main model separation
-
-Keep baseline and main model outputs separate.
-
-Recommended naming:
-
-```text
-q1_baseline.m
-q1_main.m
-q1_improved.m
-
-q1_baseline_results.csv
-q1_main_results.csv
-q1_improved_results.csv
-```
-
-Do not overwrite baseline results with main model results.
-
-Do not mix baseline and main model outputs in a way that makes comparison impossible.
-
-## Comments
-
-Use comments to explain:
-
-- input files
-- output files
-- model steps
-- non-obvious formulas
-- parameter choices
-- inherited assumptions
-- compatibility notes
-
-Avoid excessive comments for trivial syntax.
-
-## Minimum script header
-
-A useful MATLAB script should start with a short header like:
-
-```matlab
-% Q1 main model
-% Input: workspace/data_clean/indicator_data.csv
-% Output:
-%   workspace/results/q1_main_results.csv
-%   workspace/figures/q1_ranking.png
-% Notes:
-%   MATLAB / 北太天元 compatible style.
-%   Avoids heavy toolbox dependencies.
-
+% Q1 approved main model
+% Input and output paths are defined in q1_code_plan.md.
 clear; clc; close all;
+rng(2026);
+
+dataDir = fullfile('workspace', 'data_clean');
+roundDir = fullfile('results', 'Q1', 'experiments', 'round1');
+tableDir = fullfile(roundDir, 'tables');
+figureDir = fullfile(roundDir, 'figures');
+
+if ~exist(tableDir, 'dir'), mkdir(tableDir); end
+if ~exist(figureDir, 'dir'), mkdir(figureDir); end
 ```
 
-This makes the script easier to inspect under contest time pressure.
+Use comments for non-obvious formulas, inherited assumptions, compatibility constraints, and artifact paths—not for trivial syntax.
 
-## Review checklist
+## Blockers
 
-Before trusting MATLAB / 北太天元 code, check:
+Stop and return upstream when:
 
-- script is a plain `.m` file
-- script can run from the project root
-- script maps to the method plan
-- baseline and main model are separated
-- cleaned data is used
-- raw data is not overwritten
-- paths are relative
-- table fields match the data report
-- matrix dimensions are correct
-- row and column vectors are consistent
-- randomness is controlled
-- results are saved under `workspace/results/`
-- figures are saved under `workspace/figures/`
-- heavy toolbox dependencies are avoided or approved
-- compatibility risks are listed
+- the human method choice or code plan is missing;
+- target/runtime constraints are unresolved;
+- required cleaned fields are absent;
+- a toolbox dependency is unsupported;
+- main and baseline cannot be compared;
+- the required output cannot be saved;
+- a code fix would alter the mathematical model.
 
-## Common blockers
-
-Stop and return to the appropriate upstream skill when:
-
-- the method plan is missing
-- `implementation.target` is not `matlab`
-- cleaned data is missing
-- required fields are missing
-- code requires unsupported toolbox functions
-- compatibility requirements conflict with the selected method
-- the script cannot produce required result artifacts
-- the script would need to overwrite raw data
-- fixing the code would change the mathematical model
-
-## Practical rule
-
-Use the simplest MATLAB-compatible implementation that can produce the required outputs and survive review.
-
-For contest work, a clear `.m` script with saved artifacts is usually better than a clever solution that depends on fragile environment-specific features.
-
+The preferred contest implementation is the simplest reviewable compatible script that produces traceable evidence.

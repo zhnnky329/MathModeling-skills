@@ -13,13 +13,14 @@ Do not write from memory, intention, or plausible guesses.
 A paper section should be based on:
 
 - problem parse
-- method plan
-- data report
+- final method explanation
+- human decision ledger
+- data profile
 - scripts
-- result tables
+- frozen numbers and final result analysis
 - figures
 - robustness report
-- figure-table plan
+- solution package
 - QA notes
 
 ## Do not invent
@@ -126,13 +127,13 @@ Do not claim raw data was edited if cleaned copies were used.
 For each subquestion, explain:
 
 - why the model fits the task
-- what the baseline is
-- what the main model is
+- what usable baseline was compared
+- what human-approved main model was used
 - variables and equations
 - objective and constraints if applicable
 - expected output
 
-Do not claim improvement before showing baseline comparison.
+Do not claim improvement before showing a directly comparable baseline result. A diagnostic reference is not a baseline.
 
 ### **Model solution**
 
@@ -225,4 +226,3 @@ If no artifact supports the claim, do not write it.
 ## **Practical rule**
 
 A weaker claim with evidence is better than a stronger claim without evidence.
-

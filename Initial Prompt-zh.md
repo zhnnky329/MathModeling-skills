@@ -17,10 +17,11 @@ workflow-orchestrator
 → problem-parser
 → problem-classifier
 → related-paper-analyzer
+→ data-auditor-cleaner
+→ decision-prompt-builder
 → method-selector
 → symbol-table-builder
 → model-assumptions-builder
-→ data-auditor-cleaner
 → model-code-analyzer
    ├── python-model-code-generator
    └── matlab-model-code-generator
@@ -36,6 +37,8 @@ workflow-orchestrator
 → paper-section-writer
 → paper-polisher
 → reference-manager
+→ consistency-auditor
+→ completeness-auditor
 → quality-assurance-auditor
 → workflow-orchestrator
 
@@ -44,12 +47,15 @@ workflow-orchestrator
 - 不要一开始就选模型。
 - 先从目标、对象、约束、数据、输出、变量、关系和可检验结论开始。
 - 题目没有解析完成前，不要进入方法选择。
-- 方法计划没有验证前，不要生成代码。
+- 方法卡没有通过风险探针、且使用者尚未记录方法选择前，不要生成代码。
 - 没有结果 artifact 前，不要写带具体数字的论文结论。
 - 没有 baseline 和稳健性/敏感性检查前，不要声称模型更优。
 - QA 没通过前，不要组装最终论文。
 - 不要修改 workspace/data_raw/ 下的原始数据。
 - 不要编造数据、数值结果、参考文献、图表、实验或模型性能结论。
+- 默认使用 `interaction_mode: learning` 与 `rigor_profile: lean`；只有论文手交接或终稿阶段才切换为 `submission`。
+- `lean` 阶段不强制每轮长报告、成功日志、冻结数字或最终审计。
+- 使用者决策统一写入 `methods/Qx/qx_decisions.jsonl`，不再为每个 skill 生成 PENDING 文件。
 
 三条关键规则：
 - 规则 1：没有最终方法详解（methods/Qx/qx_final_method_explanation.md），不准写最终论文。
@@ -59,12 +65,12 @@ workflow-orchestrator
 请使用以下 workspace 约定：
 
 project/
-├── planning/                   # 全局规划（解析/分类/符号表/假设/依赖/进度看板）
-├── methods/Qx/                 # 建模手区（候选方法/迭代记录/最终方法详解/图表规划）
+├── planning/                   # 解析/分类/符号表/假设/manifest/session 配置
+├── methods/Qx/                 # 方法卡/决策账本/风险探针/最终方法详解/图表规划
 ├── code/Qx/                    # Python 代码
 ├── code/matlab/Qx/             # MATLAB 代码
 ├── results/Qx/
-│   ├── experiments/roundN/     # 实验输出（figures/tables/metrics/logs/run_summary.json）
+│   ├── experiments/roundN/     # 实验输出（figures/tables/metrics/run_summary.json）
 │   └── reports/                # 实验报告/最终结果分析/论文材料包
 ├── robustness/Qx/              # 稳健性报告
 ├── paper/                      # 论文手区（sections/figures/refs.bib/main.tex/qa_report.md）
@@ -107,7 +113,7 @@ project/
    在最终定方法前，收集并分析相关论文、报告或参考解法。提炼可迁移的方法思路、假设、数据需求和风险。不要编造参考文献，也不要盲目照搬论文模型。
 
 5. 建模路线  
-   对每个子问题，先比较 2–4 个候选建模方案，再推荐一个执行路线。baseline、主模型和可选改进模型不能替代"多方案比较"。
+   先让我选择输出形式、可解释性、不可接受风险和实验预算；再筛选一个主方法、一个可信 baseline，以及最多一个条件性备用。不要为了数量凑候选。风险探针必须包含输出集中或退化检查。
 
 6. 求解与验证  
    明确需要哪些输出、指标、表格和图。需要和 baseline 对比，并规划稳健性或敏感性检查。

@@ -48,7 +48,21 @@ A baseline is not decoration. It should be:
 - comparable to the main model
 - able to produce the same type of output
 
+An identity rule, random output, or diagnostic-only reference does not count as the official baseline. If no usable baseline exists, stop and ask the human to accept and document that limitation.
+
 Without a baseline, claims like “better,” “more accurate,” or “more stable” are usually unsupported.
+
+## Use roles, not a model quota
+
+The shortlist normally contains:
+
+- one main candidate
+- one usable baseline
+- at most one conditional fallback
+
+Do not pad the list to a fixed count. Do not implement the fallback until its trigger is observed and the human activates it.
+
+Screen each role against data coverage, assumptions, executability, output concentration or degeneracy, targeted perturbations, and scale. A tiny successful demo alone does not establish method readiness.
 
 ## Keep artifacts traceable
 
@@ -57,10 +71,12 @@ Important outputs should be traceable.
 A paper claim should connect back to one or more of:
 
 - problem parse
-- method plan
-- data report
+- method card
+- decision ledger
+- data profile
+- risk-probe summary
 - script
-- result table
+- run summary or result table
 - figure
 - robustness report
 - paper section
@@ -129,6 +145,15 @@ The workflow separates stages on purpose:
 
 This separation prevents the paper from drifting away from the actual model and results.
 
+## Match artifact density to the work
+
+`interaction_mode` controls how much guidance the human receives. `rigor_profile` controls artifact and audit density.
+
+- `lean` keeps only canonical machine evidence needed for exploration and decisions.
+- `submission` adds frozen claims, final reports, paper artifacts, and the three independent audits.
+
+Neither profile changes the human-judgment boundary. Create full logs only for failures, warnings, or reproduction needs.
+
 ## **Be honest about uncertainty**
 
 Uncertainty is not a failure.
@@ -154,4 +179,3 @@ Users still need to decide:
 - whether a method is appropriate
 - whether a result is meaningful
 - whether a conclusion should be stated strongly or cautiously
-

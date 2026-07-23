@@ -177,7 +177,7 @@ A useful figure-table plan should include:
       "type": "workflow",
       "title": "Modeling workflow",
       "source_artifacts": [
-        "workspace/problem/method_plan.json"
+        "methods/Q1/q1_method_card.md"
       ],
       "paper_section": "Model overview",
       "supports_claim": "The solution follows a staged modeling pipeline."
@@ -189,7 +189,7 @@ A useful figure-table plan should include:
       "type": "model_result_table",
       "title": "Q1 scores and rankings",
       "source_artifacts": [
-        "workspace/results/q1_main_results.csv"
+        "results/Q1/experiments/round1/tables/q1_main_results.csv"
       ],
       "paper_section": "Q1 results",
       "supports_claim": "The evaluation model produces comparable scores and rankings."
@@ -203,4 +203,3 @@ A useful figure-table plan should include:
 Use tables when exact values matter.
 
 Use figures when patterns, trends, comparisons, or stability need to be seen.
-

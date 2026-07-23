@@ -18,9 +18,12 @@ If any required subquestion is unanswered, QA fails.
 
 For each subquestion, check:
 
-- [ ] Candidate method pool exists (`methods/Qx/qx_method_candidates.md`)
-- [ ] Experiment report(s) exist (`results/Qx/experiments/roundN/`)
-- [ ] Method iteration log exists (`methods/Qx/qx_method_iteration_log.md`)
+- [ ] Manifest exists (`planning/manifests/Qx.json`)
+- [ ] Method card exists (`methods/Qx/qx_method_card.md`)
+- [ ] Human decision ledger exists (`methods/Qx/qx_decisions.jsonl`)
+- [ ] Risk-probe summary exists (`methods/Qx/probes/risk_probe_summary.json`)
+- [ ] Final experiment `run_summary.json` exists
+- [ ] Language review JSON exists with all required named checks passing
 - [ ] Final method explanation exists (`methods/Qx/qx_final_method_explanation.md`)  ← Rule 1
 - [ ] Final result analysis exists (`results/Qx/reports/qx_final_result_analysis.md`)  ← Rule 2
 - [ ] Solution package exists (`results/Qx/reports/qx_solution_package_for_writer.md`)  ← Rule 3
@@ -48,9 +51,9 @@ Blocking issues:
 Check:
 
 - task type matches the chosen method
-- paper's method description matches the final method explanation (not early candidate pool)
+- paper's method description matches the final method explanation and approved method card
 - baseline exists for every main model unless justified
-- improved model is clearly marked as optional if not essential
+- conditional fallback is dormant unless its recorded trigger fired
 - eliminated methods are mentioned appropriately
 - rejected methods are not later described as used
 
@@ -68,7 +71,7 @@ Check:
 - cleaned data is documented
 - field meanings and units are clear
 - missing values and outliers are handled or discussed
-- data used in scripts matches the data report
+- data used in scripts matches the canonical data profile
 - derived features are explained
 
 Blocking issues:
@@ -83,9 +86,10 @@ Blocking issues:
 Check:
 
 - scripts exist under `code/Qx/` or `code/matlab/Qx/`
-- run instructions are available (README.md in code folder)
+- run instructions are available in `qx_code_plan.md`
 - output files follow `experiments/roundN/` structure
-- `run_summary.json` exists for each round
+- `run_summary.json` exists for every executed round
+- successful runs do not need full logs; failures and reproducibility warnings retain them
 - paper numbers match result files
 - random seeds are fixed when needed
 
@@ -170,9 +174,9 @@ For each major claim, identify at least one supporting artifact:
 | Claim type | Expected artifact |
 |------------|-------------------|
 | problem interpretation | problem parse |
-| method choice | final method explanation |
-| data statement | data report |
-| numerical result | result file under `results/Qx/experiments/` |
+| method choice | human decision ledger + final method explanation |
+| data statement | `workspace/data_clean/data_profile.json` |
+| numerical result | `frozen_numbers.json` + canonical result file |
 | figure claim | figure source file |
 | robustness claim | robustness report under `robustness/Qx/` |
 | code-based result | reviewed script and output + `run_summary.json` |

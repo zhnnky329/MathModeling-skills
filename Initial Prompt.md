@@ -17,10 +17,11 @@ workflow-orchestrator
 → problem-parser
 → problem-classifier
 → related-paper-analyzer
+→ data-auditor-cleaner
+→ decision-prompt-builder
 → method-selector
 → symbol-table-builder
 → model-assumptions-builder
-→ data-auditor-cleaner
 → model-code-analyzer
    ├── python-model-code-generator
    └── matlab-model-code-generator
@@ -36,6 +37,8 @@ workflow-orchestrator
 → paper-section-writer
 → paper-polisher
 → reference-manager
+→ consistency-auditor
+→ completeness-auditor
 → quality-assurance-auditor
 → workflow-orchestrator
 
@@ -44,12 +47,15 @@ Core rules:
 - Do not start by choosing a model.
 - Start from goals, objects, constraints, data, outputs, variables, relationships, and checkable conclusions.
 - Do not select methods before the problem is parsed.
-- Do not generate code before the method plan is validated.
+- Do not generate code before the method card passes its risk probe and the human records a method choice.
 - Do not write numerical paper claims before result artifacts exist.
 - Do not claim a model is better without a baseline and robustness or sensitivity check.
 - Do not assemble the final paper before QA passes.
 - Do not modify raw data under workspace/data_raw/.
 - Do not fabricate data, numerical results, references, figures, tables, experiments, or performance claims.
+- Default to `interaction_mode: learning` and `rigor_profile: lean`; switch to `submission` only for writer handoff/finalization.
+- Do not require full per-round reports, success logs, frozen numbers, or final audits while the profile is `lean`.
+- Capture human choices in `methods/Qx/qx_decisions.jsonl`, not separate per-skill pending files.
 
 Three critical rules:
 - Rule 1: Do not write final paper sections for Qx unless methods/Qx/qx_final_method_explanation.md exists.
@@ -59,12 +65,12 @@ Three critical rules:
 Use this workspace convention:
 
 project/
-├── planning/                   # Global planning: parse, classify, symbol table, assumptions, dependencies, progress dashboard
-├── methods/Qx/                 # Modeler zone: candidates, iteration log, final method explanation, figure-table plan
+├── planning/                   # Parse, classification, symbols, assumptions, manifests, session config
+├── methods/Qx/                 # Method card, decision ledger, probes, final explanation, figure plan
 ├── code/Qx/                    # Python code
 ├── code/matlab/Qx/             # MATLAB code
 ├── results/Qx/
-│   ├── experiments/roundN/     # Experiment outputs (figures/tables/metrics/logs/run_summary.json)
+│   ├── experiments/roundN/     # Experiment outputs (figures/tables/metrics/run_summary.json)
 │   └── reports/                # Experiment reports, final result analysis, solution packages
 ├── robustness/Qx/              # Robustness reports
 ├── paper/                      # Writer zone (sections/figures/refs.bib/main.tex/qa_report.md)
@@ -107,7 +113,7 @@ When analyzing the problem, consider:
    Collect and analyze relevant papers, reports, or reference solutions before final method selection. Extract transferable ideas, assumptions, data needs, and risks. Do not fabricate references or copy models blindly.
 
 5. Modeling route
-   For each subquestion, first compare 2-4 candidate modeling schemes. Then recommend one execution route. Baseline, main model, and optional improvement are not substitutes for multiple candidate schemes.
+   Ask me to choose the output, interpretability, unacceptable-risk, and experiment-budget trade-offs first. Then screen one main candidate, one usable baseline, and at most one conditional fallback. Do not pad the shortlist. Use a method-specific risk probe that includes output concentration or degeneracy checks.
 
 6. Solution and validation
    Define what outputs, metrics, tables, and figures are needed. Compare against baselines and plan robustness or sensitivity checks.

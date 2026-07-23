@@ -1,299 +1,253 @@
 # Core Philosophy
 
-- **The AI owns mechanical correctness; the human owns modeling judgment.** Assistant for the engineering discipline, not a solver or paper-writer. AI keeps numbers traceable, runs PoCs, audits, render-checks, enforces gates. The human chooses the method and says why, decides what a number means, judges results, frames assumptions, authorizes submission. A skill must never originate, on the human's behalf, a judgment a judge would grade.
+- **The AI owns mechanical correctness; the human owns modeling judgment.**
 - Start from goals, objects, constraints, data, outputs, variables, relationships, and checkable conclusions.
 - Do not start from model names or favorite techniques.
 - Separate assumptions, observations, derivations, and validated conclusions.
+- Preserve evidence that changes a decision; do not create files merely to prove that a skill ran.
+
+# Configuration
+
+`planning/session_config.json` has two independent controls:
+
+```json
+{
+  "interaction_mode": "learning",
+  "rigor_profile": "lean"
+}
+```
+
+- `interaction_mode`: `learning` or `speed`. It changes question density and when AI suggestions are shown.
+- `rigor_profile`: `lean` or `submission`. It changes artifact and audit density, never the human-judgment boundary.
+- Default to `learning + lean` in a fresh workspace.
+- Use `lean` while exploring and iterating. Switch to `submission` only when preparing writer handoff or final assembly.
+- For compatibility, read legacy `{ "mode": "learning" | "speed" }` as `interaction_mode`.
+
+# Repository Skill Copies
+
+- `.codex/skills/` and `.claude/skills/` are two complete, independently usable skill trees.
+- Every skill and referenced local resource required at runtime must exist in both trees; neither tree may depend on a wrapper, symlink, or path into the other.
+- When a shared skill contract changes, update and validate both copies in the same change.
+- Runtime-specific wording may differ only when necessary, but each copy must remain standalone and behaviorally consistent with this policy.
 
 # Workflow Discipline
 
-- Parse the problem before classifying it.
-- Classify the task before selecting methods.
-- Generate a candidate method pool before committing to one method.
-- Validate the method plan before writing code or paper text.
-- Run multi-round experiments before locking in the final method.
-- Keep every change minimal, traceable, and easy to review.
-- **Change-propagation rule (P1)**: After modifying any file under `code/Qx/`, `methods/Qx/`, `results/Qx/reports/`, or `planning/`, grep the entire workspace for references to the changed artifact (symbol name, parameter name, file path, numerical value), list every file that now may be stale, and either update it in the same turn or flag it as STALE with recommended repair. Specifically:
-  1. `grep -rn '<changed_identifier>' methods/ code/ results/ paper/ planning/` before claiming "done".
-  2. If the changed file is under `code/Qx/` and `frozen_numbers.json` exists for that Qx, mark the freeze as stale in `results/Qx/reports/freeze_change_log.md`.
-  3. After any multi-file change, run `consistency-auditor` for the affected Qx as an incremental check — do not defer to the final G6 run.
+- Parse before classifying; classify before screening methods.
+- Ask the modeler about output form, priority, unacceptable failure, and experiment budget before creating a method shortlist.
+- Build a role-based shortlist rather than filling a quota:
+  - one `main_candidate`;
+  - one `usable_baseline`;
+  - at most one `conditional_fallback`.
+- Allow only a main candidate plus baseline when no genuine fallback exists.
+- A trivial reference that cannot complete the real task is `diagnostic_reference`, not a baseline.
+- Fully implement the human-approved main method and usable baseline only. Activate a fallback only when its recorded trigger fires.
+- Keep changes minimal, traceable, and reviewable.
 
-# Workflow Gates (G1 – G6)
+# Human Decision Convention
 
-Gates are not stages. A stage is "where I am"; a gate is "what I must satisfy to leave". The orchestrator evaluates each gate against an explicit `enter_condition / pass_criteria / fail_fallback` contract. See `.codex/skills/workflow-orchestrator/SKILL.md` for the full contract.
+Human decisions are captured in one append-only ledger per subquestion:
 
-- **G1 PROBLEM_PARSED**: parse + classification exist.
-- **G2 METHOD_VALIDATED** (load-bearing — method→code boundary): each candidate has a ≤30-line PoC + feasibility number. No PoC ⇒ not validated.
-- **G2.5 METHOD_CHOSEN_BY_HUMAN** (human-decision gate, pilot): `methods/Qx/decisions/method-selector_modeler_decision.md` is `DECIDED` by the human with a non-empty, non-copied, evidence-citing rationale. `method-selector` only emits `[CANDIDATE — PoC PASS]` + an AI suggestion; the human commits the choice. `code_generation_allowed_Qx = G2 ∧ G2.5`. The orchestrator never fills the decision artifact or infers the choice from the AI suggestion.
-- **G3 CODE_REVIEWED**: reviewer artifact exists at `code/Qx/reviews/qx_<lang>_review.md` with ≥ 5 explicit pass items.
-- **G4.5 RESULTS_JUDGED_BY_HUMAN** (human-decision gate): before the freeze, the human renders the result verdict (`result-report-generator` → `qx_result_verdict`) and stability verdict (`robustness-checker` → `qx_stability_verdict`, citing a number). `[REJECTED]` archival fires only off a human tag. `freeze_allowed_Qx = G3 ∧ G4.5`. The why-this-method narrative is transcribed from the decision log, not re-authored.
-- **G4 RESULTS_FROZEN** (load-bearing — results→paper boundary): requires G4.5 passed + package sign-off (`solution-package-builder` → `qx_package_signoff`). `frozen_numbers.json` exists and is newer than every source file; solution package sources all numbers from it; every "why we chose X" traces to a decision_id.
-- **G5 PAPER_SECTION_READY**: section meets word-count floor; every numerical result has ≥ 3 discussion dimensions; every figure passes render-check.
-- **G6 AUDIT_LAYER_PASSED**: all three independent audits PASSED (see "Independent Audit Layer" below).
+`methods/Qx/qx_decisions.jsonl`
 
-Rules:
-- Do not select methods before G1.
-- Do not generate code before G2 (every candidate must have a PoC).
-- Do not write numerical paper claims before G4 (numbers must be frozen).
-- Do not hand a subquestion to the paper writer before the three critical rules are satisfied.
-- Do not assemble the final paper before G6.
-- A gate failure marks all downstream artifacts DIRTY — files at later stages are not automatically valid.
+Use `planning/framing_decisions.jsonl` for global or pre-subquestion framing decisions made before a Qx method directory exists.
 
-# Independent Audit Layer
+Each line is a JSON object with at least:
 
-`workflow-orchestrator` does NOT decide "completion". Three orthogonal auditors do — and any one of them failing blocks final assembly:
+```json
+{
+  "decision_id": "q2_method_choice",
+  "decision_type": "method_choice",
+  "status": "DECIDED",
+  "decided_by": "human",
+  "captured_in_mode": "learning",
+  "choice": "M2",
+  "rationale": "M2 is selected because ...",
+  "evidence_refs": ["methods/Q2/probes/risk_probe_summary.json"],
+  "decided_at": "ISO-8601 timestamp"
+}
+```
 
-1. **consistency-auditor** → `paper/audits/cross_media_consistency_audit.md`
-   Cross-media facts (numbers / file names / symbols / parameters) match across tex ↔ code ↔ frozen_numbers.json ↔ symbol_table.md.
-2. **completeness-auditor** → `paper/audits/completeness_audit.md`
-   Every skill that claims "完成" produced a substantive artifact on disk with ≥ 5 explicit pass items. Verbal completion does not count.
-3. **quality-assurance-auditor** → `paper/qa_report.md`
-   Workflow completeness, three critical rules, anti-fabrication, paper quality.
+- The AI may present evidence and options but must not originate the human's choice, rationale, confidence, physical interpretation, or submission authorization.
+- The AI may append the user's answer verbatim or faithfully structure it; it must not strengthen or invent the rationale.
+- Do not create per-skill `*_modeler_decision.md` files for new work.
+- Existing decision Markdown files remain readable during migration but are not required for new work.
+- A decision passes only when it is human-authored, evidence-linked, non-empty, and contains no placeholder.
 
-A single auditor's "✅" is NOT sufficient. The three are orthogonal — they catch different failure modes. Treat the entire layer as Gate G6.
+# Choice Cards
 
-# Frozen Numbers Convention
+Use choice cards only at modeling-judgment points, normally twice per subquestion:
 
-Numbers flow code → results → paper. Without a freeze layer, a bug fix in code silently shifts the paper's numbers. To prevent this:
+1. Before method screening: output form, interpretability/performance priority, unacceptable failure, experiment budget.
+2. After the first meaningful experiment: proceed, adjust, or activate the fallback.
 
-- After `solution-package-builder` runs for Qx, it MUST emit `results/Qx/reports/frozen_numbers.json` capturing every numerical claim with provenance: `{value, source_file, source_line, frozen_at, frozen_by_skill}`.
-- The solution package and all downstream paper sections source numerical claims from this file, not from raw results.
-- A frozen snapshot is **immutable** by convention. To change a frozen number, the modeler must explicitly walk the three-step:
-  1. **解冻** — log the reason in `results/Qx/reports/freeze_change_log.md`.
-  2. **修改** — update the canonical source (code or analysis report); re-run experiments if needed.
-  3. **重冻结** — re-invoke `solution-package-builder` to regenerate `frozen_numbers.json`.
+An optional third card may be used before final freeze for claim scope and confidence. Do not ask users to decide mechanically checkable matters.
+
+# Workflow Gates
+
+## G1 — PROBLEM_FRAMED
+
+- Parse, classification, data inventory, success criteria, and human framing exist.
+
+## G2 — METHOD_SCREENED
+
+- `methods/Qx/qx_method_card.md` defines the main candidate, usable baseline, and optional conditional fallback.
+- `methods/Qx/probes/risk_probe_summary.json` exists.
+- The main candidate and usable baseline pass the applicable risk checks.
+- Any fallback has an explicit activation trigger.
+- No fixed candidate count or source-line limit is used.
+
+## G2.5 — METHOD_CHOSEN_BY_HUMAN
+
+- `qx_decisions.jsonl` contains a `DECIDED` human `method_choice` record citing probe evidence.
+- Code generation is allowed only when G2 and G2.5 both pass.
+
+## G3 — CODE_AND_EXPERIMENT_REVIEWED
+
+- The approved main method and usable baseline ran.
+- `results/Qx/experiments/roundN/run_summary.json` records configuration, seed, metrics, outputs, and failures.
+- A language review artifact contains the required named checks:
+  - `syntax`
+  - `input_contract`
+  - `method_alignment`
+  - `reproducibility`
+  - `output_contract`
+- New review artifacts use `code/Qx/reviews/qx_<lang>_review.json`. Legacy Markdown reviews may be read during migration.
+
+## G4 — RESULTS_JUDGED_AND_FROZEN
+
+- The human decision ledger contains result, stability, and claim-scope verdicts tied to computed evidence.
+- Final result analysis and robustness report exist.
+- In `submission` profile, the solution package and immutable `frozen_numbers.json` exist and are current.
+
+## G5 — PAPER_SECTION_READY
+
+- The writer uses the solution package as the primary source.
+- Numerical claims come from `frozen_numbers.json`.
+- Physical/domain interpretation and contribution claims are human-confirmed.
+- Every paper figure passes render verification.
+
+## G6 — FINAL_AUDIT_PASSED
+
+Run only in `submission` profile. All three must pass:
+
+- cross-media consistency;
+- semantic completeness;
+- final quality assurance.
+
+# Risk Probe Contract
+
+The risk probe replaces universal ≤30-line PoCs. It is time-bounded, method-specific, and may use reusable scripts.
+
+`methods/Qx/probes/risk_probe_summary.json` must contain:
+
+- `executability`: can the method produce a legal result?
+- `data_coverage`: missingness, effective sample size, imbalance, cardinality, and distribution coverage.
+- `assumption_checks`: only checks relevant to the method, such as stationarity, multicollinearity, identifiability, clusterability, or constraint feasibility.
+- `output_degeneracy`: variance, unique-output count, top-k mass, entropy/Gini, score or rank concentration, and constraint slack where applicable.
+- `perturbation_sensitivity`: response to a small justified perturbation.
+- `scale_check`: runtime and memory at representative sizes.
+- `verdict`: `PASS`, `CONDITIONAL`, or `FAIL`, with evidence and fallback trigger when conditional.
+
+Do not reject a method merely because an irrelevant generic test is unavailable. Do reject or condition it when a load-bearing assumption fails or its output degenerates.
+
+# Lean Artifact Contract
+
+During exploration, keep only:
+
+```text
+planning/session_config.json
+planning/framing_decisions.jsonl       # only when global framing decisions exist
+planning/manifests/Qx.json
+methods/Qx/qx_method_card.md
+methods/Qx/qx_decisions.jsonl
+methods/Qx/probes/risk_probe_summary.json
+results/Qx/experiments/roundN/run_summary.json
+```
+
+- `planning/manifests/Qx.json` is the machine-readable state source.
+- Derive dashboards from manifests; do not rewrite a large dashboard after every state transition.
+- `qx_method_card.md` contains roles, assumptions, risks, fallback triggers, and a compact decision history. Do not maintain a separate iteration log for new work.
+- Successful runs store summaries and artifact paths. Persist full console logs only for failures or when needed to reproduce an anomaly.
+- Ordinary rounds do not require a Markdown experiment report. Generate one only at a human decision point or for the final round.
+
+# Submission Artifact Contract
+
+Before writer handoff, add:
+
+```text
+methods/Qx/qx_final_method_explanation.md
+code/Qx/reviews/qx_<lang>_review.json
+results/Qx/reports/qx_final_result_analysis.md
+robustness/Qx/qx_robustness_report.md
+results/Qx/reports/qx_solution_package_for_writer.md
+results/Qx/reports/frozen_numbers.json
+```
+
+The three critical writer rules remain:
+
+1. No final method explanation, no paper section.
+2. No final result analysis, no writer handoff.
+3. The writer reads the solution package rather than guessing from scattered results.
+
+# Change Impact and Auditing
+
+Classify a change before auditing:
+
+- `NONE`: scratch files, formatting, comments, non-semantic documentation. No consistency audit.
+- `LOCAL`: exploratory code or method-card changes before freeze. Run local tests/review only.
+- `CANONICAL`: data schema/units, symbols, equations, parameters, official result values, or figure paths. Run a scoped consistency check for affected Qx.
+- `FROZEN`: anything that can change a frozen number or paper claim. Log the thaw, update the canonical source, rerun affected experiments, re-freeze, then run scoped consistency.
+
+Do not run a full-workspace audit merely because multiple files changed. Always run the full three-auditor layer once in `submission` profile before final assembly.
+
+# Frozen Numbers
+
+- Numbers flow code → results → freeze → paper.
 - Never edit `frozen_numbers.json` by hand.
-- `consistency-auditor` checks freeze staleness: if any `code/Qx/*` file's mtime is newer than `frozen_at`, the snapshot is STALE.
+- To change a frozen value: **解冻 → 修改 canonical source → 重跑 affected work → 重冻结**.
+- Record the reason in `results/Qx/reports/freeze_change_log.md`.
+- A freeze is stale when a referenced canonical source is newer than `frozen_at`.
 
-# Learning / Speed Mode Convention
+# Experiment Output
 
-`planning/session_config.json` holds `{ "mode": "learning" | "speed" }` (default `learning`). The toggle changes scaffolding density and anchor-timing ONLY — never a char floor, copy-detection, or any gate. `decision-prompt-builder` asks 2-3 trade-off questions only the human can answer (full in learning, terse in speed); in learning mode the AI's `ai_suggestion` is withheld until the human writes their rationale (anti-anchoring), shown alongside in speed. `modeler-decision-logger` records `captured_in_mode`. Speed must not be abused to skip thinking — `completeness-auditor` still enforces the floors.
+Every executed round writes:
 
-# Rejected-Method Archival Convention
-
-Failed or eliminated candidate methods do not stay in the main code tree. Once `result-report-generator` or `method-selector` marks a method as `[REJECTED]`:
-
-- Move its PoC script, code, and output figures to `workspace/archived/<Qx>/<method>_REJECTED_roundN/`.
-- Keep a one-line breadcrumb in `methods/Qx/qx_method_iteration_log.md` explaining why it was rejected.
-- Main tree keeps only `[CHOSEN]` and `[BACKUP]` methods.
-
-# Per-Question Delivery Chain (MANDATORY)
-
-For each subquestion Qx, it is FORBIDDEN to treat "code ran successfully" as "the subquestion is done."
-
-Every subquestion must complete the following chain:
-
-```
-Stage 1:  建模手提出多个候选方法
-          → methods/Qx/qx_method_candidates.md
-
-Stage 2:  编程手实现多候选方法, 运行实验
-          → code/Qx/*.py (or *.m)
-          → results/Qx/experiments/roundN/
-
-Stage 3:  编程手生成实验报告, 对比各方法
-          → results/Qx/experiments/roundN/qx_experiment_report_roundN.md
-
-Stage 4:  建模手根据实验报告修改、淘汰或合并方法
-          → methods/Qx/qx_method_iteration_log.md
-
-Stage 5:  多轮迭代后 (重复 Stage 2-4), 建模手确定最终方法
-          → State: Final Method Selected (confirmed by modeler)
-
-Stage 6:  AI/建模手写最终方法详解
-          → methods/Qx/qx_final_method_explanation.md
-
-Stage 7:  编程手/result-report-generator 生成最终结果分析
-          → results/Qx/reports/qx_final_result_analysis.md
-
-Stage 8:  robustness-checker 执行稳健性分析
-          → robustness/Qx/qx_robustness_report.md
-
-Stage 9:  solution-package-builder 生成论文手材料包
-          → results/Qx/reports/qx_solution_package_for_writer.md
-
-Stage 10: 论文手撰写 Qx 论文段落
-          → paper/sections/qx.tex (or .md)
-
-Stage 11: 建模手审核论文模型部分, 编程手审核论文结果和图表
-
-Stage 12: 审核通过后 Qx 状态改为 Finalized
-```
-
-If `qx_final_method_explanation.md`, `qx_final_result_analysis.md`, or `qx_solution_package_for_writer.md` is missing, that subquestion MUST NOT enter the paper writing stage.
-
-# Minimum Files Per Subquestion
-
-Each subquestion Qx must have at least these 7 files before being considered "Ready for Writer":
-
-| # | File | Primary Author | Purpose |
-|---|------|---------------|---------|
-| 1 | `methods/Qx/qx_method_candidates.md` (with PoC under `methods/Qx/poc/`) | 建模手 + method-selector | 候选方法池 + 每个候选 ≤30 行 PoC |
-| 2 | `methods/Qx/qx_method_iteration_log.md` | 建模手 + 编程手 | 方法迭代记录 (含 [REJECTED] 归档 trace) |
-| 3 | `methods/Qx/qx_final_method_explanation.md` | 建模手 + final-method-explainer | 最终方法详解 |
-| 4 | `code/Qx/reviews/qx_<lang>_review.md` (≥ 5 通过项) | python/matlab-code-reviewer | 代码审查记录 |
-| 5 | `results/Qx/reports/qx_final_result_analysis.md` | 编程手 + result-report-generator | 最终结果分析 |
-| 6 | `results/Qx/reports/qx_solution_package_for_writer.md` | solution-package-builder | 论文手材料包 |
-| 7 | `results/Qx/reports/frozen_numbers.json` | solution-package-builder | 不可变数字快照 (Gate G4) |
-
-# Three Critical Rules (ENFORCED AT GATES)
-
-These three rules are enforced by `workflow-orchestrator` and `paper-section-writer`. Violation of any rule means the subquestion is NOT Ready for Writer.
-
-## Rule 1: 没有最终方法详解，不准写最终论文
-
-`paper-section-writer` MUST NOT write final paper sections for Qx based on `qx_method_candidates.md` or early method plans. The file `methods/Qx/qx_final_method_explanation.md` MUST exist first.
-
-## Rule 2: 没有最终结果分析，不准交给论文手
-
-Program execution outputs alone are NOT a deliverable. The programmer (or `result-report-generator`) MUST produce `results/Qx/reports/qx_final_result_analysis.md` before the writer can proceed.
-
-## Rule 3: 论文手只看材料包，不从零散 results 里猜
-
-The paper writer's primary source for Qx is `results/Qx/reports/qx_solution_package_for_writer.md`. If this file is missing, Qx is NOT Ready for Writer, and the writer should not hunt through scattered results.
-
-# Figure Type Classification
-
-All figures must be classified into one of four types:
-
-| Type | Name | Audience | Paper Use |
-|------|------|----------|-----------|
-| Type 1 | 诊断图 Diagnostic | 建模手 (modeler) | NOT for paper — internal model debugging only |
-| Type 2 | 对比图 Comparison | 建模手 + 论文手 | MAY appear in paper — supports method selection narrative |
-| Type 3 | 论文图 Paper | 论文读者 (judges) | MUST appear in paper — supports main claims |
-| Type 4 | 附录图 Appendix | 论文读者 (supplementary) | Referenced from main text, shown in appendix |
-
-Type 1 diagnostic figures must NOT appear in the final paper. Type 3 paper figures must be publication-quality (≥300 dpi, clear labels, informative captions).
-
-# Experiments Output Structure
-
-Every round of experiments MUST output to:
-
-```
+```text
 results/Qx/experiments/roundN/
-├── figures/          # All generated figures
-├── tables/           # All result tables (.csv)
-├── metrics/          # All evaluation metrics (.csv, .json)
-├── logs/             # Execution logs
-└── run_summary.json  # Machine-readable execution record
+├── figures/
+├── tables/
+├── metrics/
+└── run_summary.json
 ```
 
-`run_summary.json` must record: question ID, round number, methods executed, their statuses, input/output files, metrics summaries, random seeds, and environment info.
+Create `logs/` only when a failure, warning, or reproducibility need justifies it.
 
-# Project Structure (Recommended)
+`run_summary.json` records question, round, approved methods, role, status, inputs, outputs, metric summary, seed, environment, warnings, and fallback-trigger state.
 
-```
-project/
-├── planning/                   # Global planning: parse, classify, symbol table, assumptions, dashboard
-│   ├── parse/                  # Problem parse outputs
-│   ├── classification/         # Problem classification outputs
-│   ├── symbol_table.md         # Unified symbol table across all subquestions
-│   ├── model_assumptions.md    # Global model assumptions
-│   ├── question_dependency.md  # Subquestion dependency map
-│   └── progress_dashboard.md   # Live progress tracking
-├── methods/                    # 建模手区: method design and iteration
-│   └── Qx/                     # Per-subquestion method artifacts
-├── code/                       # 编程手区: executable code
-│   └── Qx/                     # Per-subquestion code
-├── results/                    # 正式结果区: experiment outputs and reports
-│   └── Qx/
-│       ├── experiments/        # Raw experiment outputs by round
-│       │   └── roundN/
-│       └── reports/            # Analysis reports and solution packages
-├── robustness/                 # 稳健性分析区
-│   └── Qx/                     # Per-subquestion robustness artifacts
-├── paper/                      # 论文手区: final paper
-│   ├── sections/               # Paper section drafts
-│   ├── figures/                # Final paper figures (Type 3 + Type 4)
-│   ├── main.tex                # Main paper file
-│   └── qa_report.md            # QA report
-├── docs/                       # Long-term reference materials
-│   ├── references/             # Method references
-│   ├── past_papers/            # Example excellent papers
-│   └── templates/              # Paper templates, report templates
-└── scratch/                    # Temporary exploration (not for final delivery)
-```
+# Modeling and Coding Rules
 
-# Symbol Discipline
+- Match methods to output, data, interpretability, time, and contest constraints.
+- Do not choose complexity for appearance.
+- Do not invent data, assumptions, evidence, results, or references.
+- Keep assumptions explicit and distinguish necessary from simplifying assumptions.
+- Maintain `planning/symbol_table.md`; define every symbol and unit before use.
+- Use fixed random seeds.
+- Save formal outputs to files; console output alone is not a deliverable.
+- Keep raw data untouched under `workspace/data_raw/`; write cleaned copies under `workspace/data_clean/`.
 
-- Create a unified symbol table early (at `planning/symbol_table.md`).
-- Same meaning must use the same symbol across all subquestions.
-- Different meanings must use different symbols.
-- Distinguish: decision variables, state variables, parameters, inputs, intermediate values, and outputs.
-- Every symbol must be defined before first use.
-- Include units where applicable.
+# Figures and Paper
 
-# Model Assumptions
+- Type 1 diagnostic: internal only.
+- Type 2 comparison: may appear in paper.
+- Type 3 paper: must support a main claim and pass publication-quality render checks.
+- Type 4 appendix: supplementary and referenced from the main text.
+- Paper claims must remain proportional to tested evidence.
+- Mention eliminated methods only when the record helps explain a real trade-off; do not manufacture breadth.
 
-- State model assumptions at `planning/model_assumptions.md` early, and refine them.
-- Distinguish "necessary" assumptions (model breaks without them) from "simplifying" assumptions (model works approximately without them).
-- Every assumption must be linked to a modeling need.
-- State the possible impact if an assumption is violated.
-- Do not include filler assumptions that don't affect the model.
+# Verification
 
-# Artifact Discipline
-
-- Treat problem parses, method plans, cleaned data, scripts, results, figures, robustness reports, and paper sections as traceable artifacts.
-- Claims must point back to artifacts.
-- Preserve artifact lineage from problem statement to final delivery.
-
-# Modeling Rules
-
-- Define the problem structure before proposing methods.
-- Generate 2-4 candidate methods per subquestion — do not commit to the first idea.
-- Match model choice to task type, available data, interpretability needs, and contest constraints.
-- Every main model must have a baseline.
-- Do not choose complex models only because they look advanced.
-- Do not invent missing evidence.
-- Final method selection happens AFTER experiments, by the modeler reviewing experiment reports.
-
-# Coding Rules
-
-- Generate code only from a validated method plan.
-- Code must produce output in the experiments/roundN/ structure.
-- Prefer clear, minimal, reviewable implementations over clever ones.
-- Do not hide assumptions inside code.
-- Save all outputs to files (CSV, JSON, PNG) — do not rely on console output only.
-- Use fixed random seeds for reproducibility.
-
-# Paper Writing Rules
-
-- Write from validated artifacts, not from guesswork.
-- The solution package (`qx_solution_package_for_writer.md`) is the primary source.
-- Keep claims aligned with actual models, data, figures, and checks.
-- Do not fabricate references, numerical results, experiments, or conclusions.
-- Do not write final paper sections for Qx if any of the three critical rules are violated.
-- Method description must match the final method explanation, not an early candidate pool.
-- Results must come from the final result analysis, not raw experiment outputs.
-- Mention eliminated methods to demonstrate thoroughness.
-
-# Verification and QA
-
-- Check logic, units, definitions, and output consistency before handoff.
-- Robustness or sensitivity checks are required before final delivery.
-- The three independent auditors (consistency / completeness / QA) are orthogonal — all must PASS before final assembly. A single auditor's "✅" is NOT sufficient.
-- Every major claim must have at least one supporting robustness check or a stated limitation.
-- Reviewer / auditor / QA skills must produce a substantive `*_review.md` / `*_audit.md` file on disk with ≥ 5 explicit pass items. A verbal "passed" without a file does not count.
-- Final delivery requires Gate G6 approval (all three auditors PASS).
-- QA checks BOTH paper quality AND workflow completeness (all 7 minimum files per subquestion).
-- Flag uncertainty explicitly instead of smoothing it over.
-- Do not fabricate data.
-- Do not hide uncertainty.
-- Do not approve final assembly with blocking issues.
-- Do not edit `frozen_numbers.json` by hand. Use the **解冻 → 修改 → 重冻结** three-step.
-
-# Team Role Responsibilities
-
-| Role | Primary Artifacts | Review Responsibility |
-|------|------------------|----------------------|
-| 建模手 (Modeler) | `methods/Qx/qx_method_candidates.md`, `methods/Qx/qx_method_iteration_log.md`, `methods/Qx/qx_final_method_explanation.md` | Review paper's model description |
-| 编程手 (Programmer) | `code/Qx/*`, `results/Qx/experiments/`, `results/Qx/reports/qx_final_result_analysis.md` | Review paper's result claims and figures |
-| 论文手 (Writer) | `paper/sections/qx.tex`, final assembly | N/A (reviewed by modeler + programmer) |
-| AI/工作流 | All intermediate reports, solution package, figure plans, robustness reports | Automated consistency checks |
-
-# Git Discipline
-
-- Push only intentional changes.
-- Do not push raw data, scratch files, intermediate experiment outputs, or generated figures unless they are final.
-- Use `.gitignore` to exclude `scratch/`, `results/Qx/experiments/` (keep only `results/Qx/reports/`).
-- Resolve merge conflicts carefully — do not discard others' work.
+- In `lean`, verify the current gate and only the affected artifacts.
+- In `submission`, verify all required artifacts, frozen-number lineage, figure rendering, references, and the three independent audits.
+- A review or audit passes by completing its named semantic checks, not by reaching an arbitrary bullet count.
+- Flag uncertainty and blocking issues explicitly.
+- Do not approve final assembly while any G6 auditor fails.

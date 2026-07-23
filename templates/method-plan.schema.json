@@ -1,116 +1,133 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Method Plan",
+  "title": "Method Card",
+  "description": "Compact role-based shortlist contract. The filename is retained for compatibility.",
   "type": "object",
   "$defs": {
     "string_array": {
       "type": "array",
       "items": {
-        "type": "string"
-      }
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
     },
-    "model_spec": {
+    "method": {
       "type": "object",
       "properties": {
+        "method_id": {
+          "type": "string",
+          "minLength": 1
+        },
         "name": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "role": {
-          "type": "string"
+          "enum": [
+            "main_candidate",
+            "usable_baseline",
+            "conditional_fallback",
+            "diagnostic_reference"
+          ]
         },
-        "reason": {
-          "$ref": "#/$defs/string_array"
-        },
-        "selection_reason": {
+        "required_output": {
           "$ref": "#/$defs/string_array"
         },
         "required_data": {
           "$ref": "#/$defs/string_array"
         },
-        "expected_output": {
+        "assumptions": {
           "$ref": "#/$defs/string_array"
         },
-        "limitations": {
+        "known_risks": {
           "$ref": "#/$defs/string_array"
         },
-        "condition": {
+        "fallback_trigger": {
           "type": "string"
         },
-        "risk": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "rejected_method": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
+        "implementation_cost": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
         },
-        "reason": {
-          "type": "string"
+        "interpretability": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
         }
       },
       "required": [
+        "method_id",
         "name",
-        "reason"
-      ],
-      "additionalProperties": false
-    },
-    "candidate_scheme": {
-      "type": "object",
-      "properties": {
-        "scheme_id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "core_methods": {
-          "$ref": "#/$defs/string_array"
-        },
-        "strengths": {
-          "$ref": "#/$defs/string_array"
-        },
-        "weaknesses": {
-          "$ref": "#/$defs/string_array"
-        },
-        "fit_reason": {
-          "type": "string"
-        },
-        "implementation_risk": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "scheme_id",
-        "name"
+        "role",
+        "required_output",
+        "required_data",
+        "assumptions",
+        "known_risks",
+        "implementation_cost",
+        "interpretability"
       ],
       "additionalProperties": false
     }
   },
   "properties": {
-    "method_plan_summary": {
+    "schema_version": {
+      "const": 2
+    },
+    "question_id": {
+      "type": "string",
+      "pattern": "^Q[^/]*$"
+    },
+    "task_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_output": {
+      "$ref": "#/$defs/string_array"
+    },
+    "human_constraints": {
+      "$ref": "#/$defs/string_array"
+    },
+    "methods": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/method"
+      }
+    },
+    "baseline_validity": {
       "type": "object",
       "properties": {
-        "overall_strategy": {
-          "type": "string"
+        "same_output_type": {
+          "type": "boolean"
         },
-        "reason": {
-          "type": "string"
+        "runnable_on_available_data": {
+          "type": "boolean"
         },
-        "implementation_priority": {
-          "$ref": "#/$defs/string_array"
+        "meaningfully_comparable": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
         }
       },
+      "required": [
+        "same_output_type",
+        "runnable_on_available_data",
+        "meaningfully_comparable"
+      ],
       "additionalProperties": false
     },
     "implementation": {
       "type": "object",
       "properties": {
         "target": {
-          "type": "string",
           "enum": [
             "python",
             "matlab"
@@ -119,177 +136,101 @@
         "runtime_notes": {
           "$ref": "#/$defs/string_array"
         },
-        "script_style": {
-          "type": "string"
-        },
-        "result_format": {
-          "$ref": "#/$defs/string_array"
-        },
-        "figure_format": {
-          "$ref": "#/$defs/string_array"
-        },
         "random_seed_required": {
           "type": "boolean"
         }
       },
       "required": [
-        "target"
+        "target",
+        "runtime_notes",
+        "random_seed_required"
       ],
       "additionalProperties": false
     },
-    "subproblem_methods": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "problem_type": {
-            "type": "string"
-          },
-          "candidate_schemes": {
-            "type": "array",
-            "minItems": 2,
-            "maxItems": 4,
-            "items": {
-              "$ref": "#/$defs/candidate_scheme"
-            }
-          },
-          "recommended_scheme_id": {
-            "type": "string"
-          },
-          "required_output": {
-            "$ref": "#/$defs/string_array"
-          },
-          "baseline_model": {
-            "$ref": "#/$defs/model_spec"
-          },
-          "main_model": {
-            "$ref": "#/$defs/model_spec"
-          },
-          "improved_model": {
-            "$ref": "#/$defs/model_spec"
-          },
-          "rejected_methods": {
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/rejected_method"
-            }
-          },
-          "expected_figures_tables": {
-            "$ref": "#/$defs/string_array"
-          },
-          "expected_artifacts": {
-            "$ref": "#/$defs/string_array"
-          },
-          "implementation_difficulty": {
-            "type": "string"
-          },
-          "validation_plan": {
-            "$ref": "#/$defs/string_array"
-          },
-          "robustness_plan": {
-            "$ref": "#/$defs/string_array"
-          }
-        },
-        "required": [
-          "id",
-          "problem_type",
-          "candidate_schemes",
-          "recommended_scheme_id",
-          "required_output",
-          "baseline_model",
-          "main_model",
-          "improved_model",
-          "rejected_methods",
-          "expected_artifacts",
-          "validation_plan",
-          "robustness_plan"
-        ],
-        "additionalProperties": false
-      }
+    "risk_probe_ref": {
+      "type": "string",
+      "pattern": "^methods/[^/]+/probes/risk_probe_summary\\.json$"
     },
-    "dependency_plan": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "from": {
-            "type": "string"
-          },
-          "to": {
-            "type": "string"
-          },
-          "artifact_needed": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "from",
-          "to",
-          "artifact_needed"
-        ],
-        "additionalProperties": false
-      }
+    "decision_ledger_ref": {
+      "type": "string",
+      "pattern": "^methods/[^/]+/qx_decisions\\.jsonl$"
     },
-    "data_requirements": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "subquestion": {
-            "type": "string"
-          },
-          "required_data": {
-            "$ref": "#/$defs/string_array"
-          },
-          "missing_data": {
-            "$ref": "#/$defs/string_array"
-          },
-          "data_risks": {
-            "$ref": "#/$defs/string_array"
-          }
-        },
-        "required": [
-          "subquestion",
-          "required_data",
-          "missing_data",
-          "data_risks"
-        ],
-        "additionalProperties": false
-      }
-    },
-    "validation_plan": {
-      "$ref": "#/$defs/string_array"
-    },
-    "robustness_plan": {
-      "$ref": "#/$defs/string_array"
-    },
-    "rejected_methods": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/rejected_method"
-      }
-    },
-    "implementation_notes": {
-      "$ref": "#/$defs/string_array"
-    },
-    "recommended_next_skill": {
-      "type": "string"
+    "status": {
+      "enum": [
+        "PROPOSED",
+        "SCREENED",
+        "HUMAN_DECIDED"
+      ]
     }
   },
   "required": [
-    "method_plan_summary",
+    "schema_version",
+    "question_id",
+    "task_type",
+    "required_output",
+    "human_constraints",
+    "methods",
+    "baseline_validity",
     "implementation",
-    "subproblem_methods",
-    "dependency_plan",
-    "data_requirements",
-    "validation_plan",
-    "robustness_plan",
-    "rejected_methods",
-    "implementation_notes",
-    "recommended_next_skill"
+    "risk_probe_ref",
+    "decision_ledger_ref",
+    "status"
+  ],
+  "allOf": [
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "properties": {
+              "role": {
+                "const": "main_candidate"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "properties": {
+              "role": {
+                "const": "usable_baseline"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "properties": {
+              "role": {
+                "const": "conditional_fallback"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "minContains": 0,
+          "maxContains": 1
+        }
+      }
+    }
   ],
   "additionalProperties": false
 }

@@ -2,23 +2,157 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "QA Report",
   "type": "object",
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "PASS",
+            "WARN",
+            "FAIL",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "enum": [
+            "BLOCKER",
+            "WARNING"
+          ]
+        },
+        "check": {
+          "type": "string"
+        },
+        "evidence_ref": {
+          "type": "string"
+        },
+        "repair_owner": {
+          "type": "string"
+        },
+        "recommended_repair": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "severity",
+        "check",
+        "evidence_ref",
+        "repair_owner",
+        "recommended_repair"
+      ],
+      "additionalProperties": false
+    }
+  },
   "properties": {
-    "checks": {
+    "schema_version": {
+      "const": 2
+    },
+    "rigor_profile": {
+      "enum": [
+        "lean",
+        "submission"
+      ]
+    },
+    "scope": {
+      "type": "string"
+    },
+    "prerequisite_audits": {
+      "type": "object",
+      "properties": {
+        "consistency": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_RUN"
+          ]
+        },
+        "completeness": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_RUN"
+          ]
+        }
+      },
+      "required": [
+        "consistency",
+        "completeness"
+      ],
+      "additionalProperties": false
+    },
+    "dimensions": {
+      "type": "object",
+      "properties": {
+        "workflow_integrity": {
+          "$ref": "#/$defs/dimension"
+        },
+        "evidence_traceability": {
+          "$ref": "#/$defs/dimension"
+        },
+        "method_claim_alignment": {
+          "$ref": "#/$defs/dimension"
+        },
+        "paper_coherence": {
+          "$ref": "#/$defs/dimension"
+        },
+        "presentation_readiness": {
+          "$ref": "#/$defs/dimension"
+        }
+      },
+      "required": [
+        "workflow_integrity",
+        "evidence_traceability",
+        "method_claim_alignment",
+        "paper_coherence",
+        "presentation_readiness"
+      ],
+      "additionalProperties": false
+    },
+    "findings": {
       "type": "array",
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/finding"
       }
     },
-    "blocking_issues": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "verdict": {
+      "enum": [
+        "PASSED",
+        "FAILED",
+        "NOT_RUN"
+      ]
+    },
+    "final_assembly_allowed": {
+      "type": "boolean"
     }
   },
   "required": [
-    "checks",
-    "blocking_issues"
+    "schema_version",
+    "rigor_profile",
+    "scope",
+    "prerequisite_audits",
+    "dimensions",
+    "findings",
+    "verdict",
+    "final_assembly_allowed"
   ],
   "additionalProperties": false
 }

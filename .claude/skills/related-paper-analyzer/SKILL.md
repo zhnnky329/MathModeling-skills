@@ -10,7 +10,7 @@ Analyze user-provided papers and reports before final method selection.
 
 This skill checks whether the user has placed original paper files under `workspace/papers/`, reads those originals, and extracts transferable method cues, assumptions, variables, validation ideas, and limitations for the current subquestions.
 
-This skill does not fabricate references, browse for new papers, write the final method plan, or copy a published model blindly.
+This skill does not fabricate references, browse for new papers, write the final method card, or copy a published model blindly.
 
 # When to use
 
