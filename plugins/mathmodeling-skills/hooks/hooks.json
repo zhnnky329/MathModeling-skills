@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[math-modeling guardrails active] Human owns modeling judgment; raw data and frozen numbers stay immutable; final assembly requires all submission audits to pass.' >&2"
+          }
+        ]
+      }
+    ]
+  }
+}

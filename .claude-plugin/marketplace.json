@@ -1,0 +1,30 @@
+{
+  "name": "mathmodeling-skills",
+  "owner": {
+    "name": "Zhijun Zhang"
+  },
+  "metadata": {
+    "description": "Mathematical-modeling workflow plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "mathmodeling-skills",
+      "source": "./plugins/mathmodeling-skills",
+      "description": "A gated mathematical-modeling contest workflow with human-owned decisions and submission audits.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Zhijun Zhang"
+      },
+      "homepage": "https://github.com/zhnnky329/MathModeling-skills",
+      "repository": "https://github.com/zhnnky329/MathModeling-skills",
+      "license": "MIT",
+      "category": "Education",
+      "tags": [
+        "mathematical-modeling",
+        "contest",
+        "research",
+        "workflow"
+      ]
+    }
+  ]
+}

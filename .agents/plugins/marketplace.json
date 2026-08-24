@@ -1,0 +1,20 @@
+{
+  "name": "mathmodeling-skills",
+  "interface": {
+    "displayName": "MathModeling Skills"
+  },
+  "plugins": [
+    {
+      "name": "mathmodeling-skills",
+      "source": {
+        "source": "local",
+        "path": "./plugins/mathmodeling-skills"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Education"
+    }
+  ]
+}

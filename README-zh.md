@@ -135,63 +135,64 @@ workflow-orchestrator（读取 interaction_mode + rigor_profile）
 
 ## 安装
 
-推荐把仓库克隆到比赛项目所在的文件夹里使用，这样 `CLAUDE.md` / `AGENTS.md` / `.claude/settings.json` 会自动生效。也可以选择全局安装。
+本仓库现已同时打包为 **Claude Code** 与 **Codex/ChatGPT** 原生插件。一个安装脚本即可注册本仓库的 marketplace，并为其中一个或两个平台安装插件。
 
-### 方案 A — 克隆到比赛项目里（推荐）
-
-```bash
-# 在将要存 methods/ code/ results/ paper/ 的文件夹里
-git clone https://github.com/zhnnky329/MathModeling-skills.git .skills-tmp
-mv .skills-tmp/.claude .claude
-mv .skills-tmp/.codex .codex
-mv .skills-tmp/CLAUDE.md .
-mv .skills-tmp/AGENTS.md .
-mv .skills-tmp/docs ./skills-docs
-rm -rf .skills-tmp
-```
-
-用 **Claude Code** 或 **Codex** 打开该文件夹，28 个 skill 会被自动识别。开场可以这样说：
-
-`.claude/skills/` 与 `.codex/skills/` 都是完整、可独立使用的副本；可以只安装其中一套，但仓库维护时必须保证每个 skill 及其引用资源在两套目录中都完整存在。
-
-```text
-读一下 CLAUDE.md，然后调用 workflow-orchestrator。我们的题目在 workspace/problem/，按 gate 顺序走，不要跳步。
-```
-
-### 方案 B — 全局装到 Claude Code
+### 一键安装原生插件（推荐）
 
 ```bash
 git clone https://github.com/zhnnky329/MathModeling-skills.git
 cd MathModeling-skills
-
-mkdir -p ~/.claude/skills
-for d in .claude/skills/*/; do
-  cp -R "$d" ~/.claude/skills/
-done
+./install.sh
 ```
 
-重启 Claude Code 后，这些 skill 在任何项目中都可用。但 `CLAUDE.md` 和 `.claude/settings.json` 仍需放在各比赛项目内，gate 规则和约束都写在其中。
+默认会以用户级范围为 Claude Code 与 Codex 同时安装 `mathmodeling-skills`。请保留这个克隆目录，它也是后续更新使用的本地 marketplace 源。安装后新开一个 Claude Code 或 Codex 会话。
 
-### 方案 C — 全局装到 Codex
+只安装一个平台、预览操作或选择 Claude 安装范围：
 
 ```bash
-git clone https://github.com/zhnnky329/MathModeling-skills.git
-cd MathModeling-skills
-
-mkdir -p ~/.codex/skills
-for d in .codex/skills/*/; do
-  cp -R "$d" ~/.codex/skills/
-done
+./install.sh --target claude
+./install.sh --target codex
+./install.sh --dry-run
+./install.sh --target claude --scope project --project-dir /path/to/contest
 ```
 
-重启 Codex 后，把 `AGENTS.md` 放入各比赛项目即可。
+Claude 支持 `user`、`project`、`local` 三种 scope。Codex 目前通过已注册的 marketplace 管理插件，不使用这个 scope 参数。
+
+### 部署完整的项目级约束
+
+原生插件模式会提供全部 28 个 skill 和内置工作流规则。如果还希望把 `CLAUDE.md`、`AGENTS.md`、Claude 权限/Hook 以及两套独立 skill 树直接部署到比赛项目，请使用 project 模式：
+
+```bash
+./install.sh --mode project --target both --project-dir /path/to/contest
+```
+
+安装器不会静默覆盖不同内容。发生冲突时会停止；加 `--force` 后，脚本会先把被替换的文件或目录移动到带时间戳的备份，再写入新版本：
+
+```bash
+./install.sh --mode project --target both --project-dir /path/to/contest --force
+```
+
+任意命令都可加 `--dry-run` 先查看将执行的变更。完整参数见 `./install.sh --help`。
 
 ### 后续更新
 
 ```bash
-cd MathModeling-skills && git pull
-# 若采用方案 B 或 C，记得再执行一次 cp 循环
+cd MathModeling-skills
+git pull
+./install.sh
 ```
+
+Claude 会刷新 marketplace 并更新已安装插件；Codex 会从当前 marketplace 包重新安装。更新后请新开会话。
+
+### 原生插件结构
+
+- Claude marketplace：`.claude-plugin/marketplace.json`
+- Codex marketplace：`.agents/plugins/marketplace.json`
+- 两个平台共享的可安装包：`plugins/mathmodeling-skills/`
+- Claude manifest：`plugins/mathmodeling-skills/.claude-plugin/plugin.json`
+- Codex manifest：`plugins/mathmodeling-skills/.codex-plugin/plugin.json`
+
+`.claude/skills/` 与 `.codex/skills/` 仍是两套完整、可独立使用的开发副本。维护者同时更新两套副本后运行 `./scripts/sync-plugin.sh`；`./scripts/sync-plugin.sh --check` 会在分发包过期时失败。
 
 ### 开场指令
 

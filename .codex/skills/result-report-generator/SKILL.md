@@ -83,4 +83,3 @@ Include:
 - Output concentration and fallback trigger are addressed.
 - Reports are generated only at decision points or final mode.
 - Human verdicts are read from or appended to the canonical JSONL ledger.
-

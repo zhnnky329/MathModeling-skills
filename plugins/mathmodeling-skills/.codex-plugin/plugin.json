@@ -1,0 +1,38 @@
+{
+  "name": "mathmodeling-skills",
+  "version": "0.1.0",
+  "description": "A gated mathematical-modeling contest workflow with human-owned modeling decisions, reproducible experiments, and submission audits.",
+  "author": {
+    "name": "Zhijun Zhang",
+    "url": "https://github.com/zhnnky329"
+  },
+  "homepage": "https://github.com/zhnnky329/MathModeling-skills",
+  "repository": "https://github.com/zhnnky329/MathModeling-skills",
+  "license": "MIT",
+  "keywords": [
+    "mathematical-modeling",
+    "contest",
+    "workflow",
+    "reproducibility",
+    "auditing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MathModeling Skills",
+    "shortDescription": "Gated workflows for mathematical-modeling contests.",
+    "longDescription": "Frame contest problems, screen methods, run reproducible experiments, freeze verified results, draft evidence-backed paper sections, and audit the final submission while keeping modeling judgments with the human modeler.",
+    "developerName": "Zhijun Zhang",
+    "category": "Education",
+    "capabilities": [
+      "Analysis",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/zhnnky329/MathModeling-skills",
+    "defaultPrompt": [
+      "Frame this modeling problem and route the next workflow gate.",
+      "Audit this modeling workspace and identify the next action.",
+      "Prepare this verified model for submission without inventing claims."
+    ],
+    "brandColor": "#1A6FC4"
+  }
+}

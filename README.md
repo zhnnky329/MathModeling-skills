@@ -137,63 +137,64 @@ The writer drafts the paper from the package and the frozen snapshot. Three inde
 
 ## Installing
 
-The recommended setup is to clone this into the folder where you'll do the contest work, so `CLAUDE.md` / `AGENTS.md` / `.claude/settings.json` apply automatically. A global install is also possible.
+This repository is packaged as a native plugin for both **Claude Code** and **Codex/ChatGPT**. One installer registers the repository's marketplace and installs the plugin for either or both hosts.
 
-### Option A — clone into your contest project (recommended)
-
-```bash
-# inside the folder that will hold methods/ code/ results/ paper/ ...
-git clone https://github.com/zhnnky329/MathModeling-skills.git .skills-tmp
-mv .skills-tmp/.claude .claude
-mv .skills-tmp/.codex .codex
-mv .skills-tmp/CLAUDE.md .
-mv .skills-tmp/AGENTS.md .
-mv .skills-tmp/docs ./skills-docs
-rm -rf .skills-tmp
-```
-
-Open the folder in **Claude Code** or **Codex**, and the 28 skills are picked up automatically. An opening message:
-
-`.claude/skills/` and `.codex/skills/` are both complete standalone copies. You may install or use either tree independently; repository maintenance keeps every skill and its references present in both.
-
-```text
-Read CLAUDE.md, then run workflow-orchestrator. Our contest problem is in workspace/problem/. Follow the gates in order and do not skip.
-```
-
-### Option B — install globally for Claude Code
+### One-command native plugin install (recommended)
 
 ```bash
 git clone https://github.com/zhnnky329/MathModeling-skills.git
 cd MathModeling-skills
-
-mkdir -p ~/.claude/skills
-for d in .claude/skills/*/; do
-  cp -R "$d" ~/.claude/skills/
-done
+./install.sh
 ```
 
-Restart Claude Code, and the skills are available in any project. `CLAUDE.md` and `.claude/settings.json` still need to be in each contest project, since that is where the gate rules and guardrails live.
+The default installs `mathmodeling-skills` for both hosts at user scope. Keep the clone: it is the local marketplace source used for updates. Start a new Claude Code or Codex session after installation.
 
-### Option C — install globally for Codex
+Install only one host, preview the operations, or choose a Claude scope:
 
 ```bash
-git clone https://github.com/zhnnky329/MathModeling-skills.git
-cd MathModeling-skills
-
-mkdir -p ~/.codex/skills
-for d in .codex/skills/*/; do
-  cp -R "$d" ~/.codex/skills/
-done
+./install.sh --target claude
+./install.sh --target codex
+./install.sh --dry-run
+./install.sh --target claude --scope project --project-dir /path/to/contest
 ```
 
-Restart Codex, and place `AGENTS.md` in each contest project for the gate rules.
+Supported Claude scopes are `user`, `project`, and `local`. Codex currently manages plugin installation through its configured marketplace and does not use this scope flag.
+
+### Deploy the full project guardrails
+
+Native plugin mode provides all 28 skills and their packaged workflow policy. To also place `CLAUDE.md`, `AGENTS.md`, Claude permissions/hooks, and standalone skill trees directly in a contest project, use project mode:
+
+```bash
+./install.sh --mode project --target both --project-dir /path/to/contest
+```
+
+The installer never silently overwrites a different file. On a conflict it stops; rerun with `--force` to move every replaced file or directory to a timestamped backup first:
+
+```bash
+./install.sh --mode project --target both --project-dir /path/to/contest --force
+```
+
+Use `--dry-run` with any command to inspect mutations first. Run `./install.sh --help` for the complete option list.
 
 ### Updating later
 
 ```bash
-cd MathModeling-skills && git pull
-# then re-run the cp loop from B or C if you installed globally
+cd MathModeling-skills
+git pull
+./install.sh
 ```
+
+Claude refreshes the registered marketplace and updates the installed plugin. Codex reinstalls from the current marketplace package. Start a new session after updating.
+
+### Native plugin layout
+
+- Claude marketplace: `.claude-plugin/marketplace.json`
+- Codex marketplace: `.agents/plugins/marketplace.json`
+- Shared installable package: `plugins/mathmodeling-skills/`
+- Claude manifest: `plugins/mathmodeling-skills/.claude-plugin/plugin.json`
+- Codex manifest: `plugins/mathmodeling-skills/.codex-plugin/plugin.json`
+
+The `.claude/skills/` and `.codex/skills/` trees remain complete standalone development copies. Maintainers update both, then run `./scripts/sync-plugin.sh`; `./scripts/sync-plugin.sh --check` fails if the distributable package is stale.
 
 ### Opening prompt
 

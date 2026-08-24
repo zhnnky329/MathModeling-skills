@@ -4,6 +4,8 @@
 
 `.claude/skills/` is a complete standalone skill tree, not an adapter to `.codex/skills/`. When maintaining a shared skill, keep the full counterpart in both trees and validate both; do not replace either copy with wrappers or symlinks.
 
+The native distribution package lives under `plugins/mathmodeling-skills/`. After updating both standalone trees, run `scripts/sync-plugin.sh` and validate both platform manifests before release.
+
 # Claude-Specific Operating Rules
 
 - Do not duplicate the full workflow contract in individual responses or generated artifacts.

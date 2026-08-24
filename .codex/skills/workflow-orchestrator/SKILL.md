@@ -7,7 +7,7 @@ description: Inspect a mathematical-modeling workspace, evaluate lean or submiss
 
 Act as the gate-driven scheduler and state reader. Do not solve models, write model code, or draft paper sections.
 
-`AGENTS.md` is the policy source. This skill applies that policy without reproducing large reports or dashboards.
+`../../AGENTS.md` is the packaged policy source. Prefer a project-root `AGENTS.md` when one exists; otherwise read the packaged copy relative to this `SKILL.md`. Apply that policy without reproducing large reports or dashboards.
 
 # Session Start
 
