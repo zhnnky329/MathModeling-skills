@@ -12,7 +12,7 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-2E9E44">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-28-1A6FC4">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-29-1A6FC4">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-supported-E28E2C">
   <img alt="Codex" src="https://img.shields.io/badge/Codex-supported-E28E2C">
 </p>
@@ -134,6 +134,7 @@ The writer drafts the paper from the package and the frozen snapshot. Three inde
 - **`consistency-auditor`** — Compares every number, file name, and symbol in the paper against `frozen_numbers.json`, the files on disk, and the symbol table.
 - **`completeness-auditor`** — Checks semantic evidence required by the active profile rather than one verbose artifact per skill.
 - **`quality-assurance-auditor`** — Checks workflow completeness, the three core rules, and anti-fabrication; as the final gate, it signs off only after the other two auditors have.
+- **`submission-packager`** — After G6, turns the deep workspace into the contest deliverable: one paper Markdown plus a flat `支撑材料/qN/` folder holding at most two consolidated, runnable scripts per question (model + figures, comments pruned), paper figures, and result/data workbooks the code reads directly, with a reproducible manifest kept outside the package.
 
 ## Installing
 
@@ -162,7 +163,7 @@ Supported Claude scopes are `user`, `project`, and `local`. Codex currently mana
 
 ### Deploy the full project guardrails
 
-Native plugin mode provides all 28 skills and their packaged workflow policy. To also place `CLAUDE.md`, `AGENTS.md`, Claude permissions/hooks, and standalone skill trees directly in a contest project, use project mode:
+Native plugin mode provides all 29 skills and their packaged workflow policy. To also place `CLAUDE.md`, `AGENTS.md`, Claude permissions/hooks, and standalone skill trees directly in a contest project, use project mode:
 
 ```bash
 ./install.sh --mode project --target both --project-dir /path/to/contest
