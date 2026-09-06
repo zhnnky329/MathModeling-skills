@@ -14,6 +14,15 @@ Turn the deep workspace tree into the two things a contest actually accepts: one
 - A final paper Markdown exists (`paper/main.md` by default) or the human supplies its path.
 - Each question has a final experiment round with a complete `run_summary.json`.
 
+# How to Run
+
+All selection, consolidation, comment pruning, read rewriting, and checks are performed by the deterministic consolidator: the bundled script `scripts/package_submission.py` (stdlib only, Python 3.8+). Do not reimplement them by hand — hand-built packages cannot reproduce the manifest.
+
+1. **Dry run.** `python <skill-dir>/scripts/package_submission.py --workspace <ws> --dry-run` prints the per-qN inclusion list (files, kinds, sources), planned consolidations and workbook merges, warnings, and problems. Present that output as the inclusion list for Human Confirmation.
+2. **Package.** After the human confirms, rerun the same command without `--dry-run`. Problems block writing; the manifest is written last.
+
+Flags: `--paper`, `--out`, `--paper-name`, `--support-dir-name` for non-default paths; `--zip` also archives the package; `--force` rebuilds an existing output dir; `--no-merge-code` / `--no-merge-data` / `--no-merge-tables` disable individual consolidation steps.
+
 # Package Structure
 
 ```text
@@ -96,4 +105,4 @@ Report checks compactly; failures block the package until resolved or explicitly
 
 # Output
 
-Return: package path, per-qN file counts by kind, check results, and the manifest path. Flag anything needing human review: missing paper Markdown, unresolved imports or figure references, code that could not be consolidated (copied unchanged), CSVs kept loose because their reads were not rewritable, data that could only be found in `data_raw/`, and shared-section figures copied into every qN.
+Return: package path, per-qN file counts by kind, check results, and the manifest path. Flag anything needing human review: missing paper Markdown, unresolved imports or figure references, code that could not be consolidated (copied unchanged), CSVs kept loose because their reads were not rewritable, `read_csv` calls with non-literal paths (variables or f-strings) whose package runnability could not be verified, data that could only be found in `data_raw/`, and shared-section figures copied into every qN.

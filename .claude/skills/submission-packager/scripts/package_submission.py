@@ -612,6 +612,21 @@ def read_csv_sites(text):
     return sites
 
 
+def non_literal_reads(text):
+    """Count read_csv calls whose first argument is not a single plain string literal."""
+    n = 0
+    for m in READ_CSV_RE.finditer(text):
+        parsed = _rest_args(text, m.end())
+        if parsed is None:
+            continue
+        args = parsed[0]
+        first = args[0].strip() if args else ""
+        if not (len(first) >= 2 and first[0] in "'\"" and first[-1] == first[0]
+                and first[1:-1].count(first[0]) == 0):
+            n += 1
+    return n
+
+
 def csv_reference_form(text, names_lower):
     sites = read_csv_sites(text)
     form = {}
@@ -715,6 +730,13 @@ def plan_question_outputs(qN, e, args, warnings):
             merge_data = should_merge("data", not args.no_merge_data, data_msrc)
             merge_tab = should_merge("tables", not args.no_merge_tables, tab_msrc)
 
+    scan = ([t for t, _, _ in code_texts.values()] if groups
+            else [read_text(p) for p in e["code"] if p.suffix.lower() == ".py"])
+    risky = sum(non_literal_reads(t) for t in scan)
+    if risky:
+        warnings.append(f"{qN}: {risky} read_csv call(s) use a non-literal path (variable, f-string, "
+                        "or concatenation); confirm the referenced file is packaged and reachable at runtime")
+
     return {"groups": groups, "code_texts": code_texts, "data_msrc": data_msrc, "tab_msrc": tab_msrc,
             "merge_data": merge_data, "merge_tab": merge_tab, "rewrites": rewrites}
 
@@ -757,9 +779,14 @@ def build_plan(ws, questions, include_data=True, include_tables=True):
     for tex, figs in sec_figs.items():
         tex_q = q_by_section.get(tex)
         for f in figs:
-            for qN in [tex_q] if tex_q else [qN for qN, _ in questions]:
-                if f not in plan[qN]["figures"]:
+            # Question sections pin their figures to that qN; a non-question
+            # section (e.g. appendix) only requires the figure to be packaged
+            # somewhere — its own qN when co-referenced, every qN when shared.
+            if tex_q:
+                if f not in plan[tex_q]["figures"]:
                     referenced_missing.append(f"{tex.name}: {f.name}")
+            elif not any(f in plan[qN]["figures"] for qN, _ in questions):
+                referenced_missing.append(f"{tex.name}: {f.name}")
     return plan, unresolved, shared_figs, referenced_missing
 
 
