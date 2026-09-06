@@ -12,7 +12,7 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-2E9E44">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-28-1A6FC4">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-29-1A6FC4">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-supported-E28E2C">
   <img alt="Codex" src="https://img.shields.io/badge/Codex-supported-E28E2C">
 </p>
@@ -78,7 +78,7 @@ workflow-orchestrator（读取 interaction_mode + rigor_profile）
 
 ★ 标的是两个承重边界：G2 在完整实现前发现假设、集中度、可行性和规模问题；G4 防止旧数字进入论文。👤 标的是由使用者负责的判断。
 
-## 28 个 skill，按所在阶段划分
+## 29 个 skill，按所在阶段划分
 
 ### 第 1 阶段 · 前期准备
 
@@ -132,6 +132,7 @@ workflow-orchestrator（读取 interaction_mode + rigor_profile）
 - **`consistency-auditor`** — 将论文里每个数字、文件名、符号与 `frozen_numbers.json`、磁盘文件、符号表逐一比对。
 - **`completeness-auditor`** — 按当前 profile 检查必要的语义证据，不再要求每个 skill 都留下长报告。
 - **`quality-assurance-auditor`** — 核查流程完整性、三条核心规则与反造假。作为最终一关，只有另外两个审计都通过时它才放行。
+- **`submission-packager`** — G6 通过后，把深层 workspace 整理成可提交的两件东西：一份论文 Markdown，加一个扁平的 `支撑材料/qN/` 文件夹（每问最多两个整合后可直接运行的脚本——建模与画图，注释按规则精简；论文用图与结果/数据工作簿由代码直读 sheet），打包清单留在包外、可复现。
 
 ## 安装
 
@@ -160,7 +161,7 @@ Claude 支持 `user`、`project`、`local` 三种 scope。Codex 目前通过已�
 
 ### 部署完整的项目级约束
 
-原生插件模式会提供全部 28 个 skill 和内置工作流规则。如果还希望把 `CLAUDE.md`、`AGENTS.md`、Claude 权限/Hook 以及两套独立 skill 树直接部署到比赛项目，请使用 project 模式：
+原生插件模式会提供全部 29 个 skill 和内置工作流规则。如果还希望把 `CLAUDE.md`、`AGENTS.md`、Claude 权限/Hook 以及两套独立 skill 树直接部署到比赛项目，请使用 project 模式：
 
 ```bash
 ./install.sh --mode project --target both --project-dir /path/to/contest

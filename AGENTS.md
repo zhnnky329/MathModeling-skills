@@ -191,6 +191,24 @@ The three critical writer rules remain:
 2. No final result analysis, no writer handoff.
 3. The writer reads the solution package rather than guessing from scattered results.
 
+# Final Submission Package
+
+After G6, `submission-packager` assembles the contest deliverable:
+
+```text
+submission/
+├── <paper>.md
+└── 支撑材料/
+    ├── q1/   # flat: qN_model.py [+ qN_figures.py], paper figures, workbooks, runnable data
+    └── qN/
+```
+
+- Selection is evidence-driven: final-round `run_summary.json` scripts, `\includegraphics` references in `paper/sections/`, final-round tables, and data the packaged code reads. Exploratory rounds, decision ledgers, probes, audits, and logs never enter the package.
+- Each `qN` folder is flat and holds at most two consolidated Python files: `qN_model.py` (entries + inlined helpers, dependency order, deduped imports) and, when figure entries exist, `qN_figures.py`. Decision-log/TODO/commented-out-code comments are pruned by rule; every consolidated file passes a compile check. MATLAB files are copied unchanged.
+- When two or more selected sources of one kind belong to a question, they are consolidated into a single multi-sheet workbook (`qN_results.xlsx`, `qN_data.xlsx`) with a `_sources` sheet mapping every sheet to its source. Result-side metrics `.json` always folds into `qN_results.xlsx` as a tabular sheet, even when it is the only source, so the package carries zero loose result json. Consolidated code reads merged CSVs through rewritten `read_excel` sheet calls so the package stays runnable; a CSV whose reads are not rewritable stays loose, and merging without code consolidation records the re-run waiver in the manifest.
+- `planning/submission_packaging_manifest.json` records every source-to-destination mapping and check result; it stays outside the package.
+- The human confirms the inclusion list before copying. Packaging copies only; the workspace tree is never modified or deleted.
+
 # Change Impact and Auditing
 
 Classify a change before auditing:
