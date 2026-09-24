@@ -191,6 +191,12 @@ The three critical writer rules remain:
 2. No final result analysis, no writer handoff.
 3. The writer reads the solution package rather than guessing from scattered results.
 
+# Final Submission Package
+
+After G6, `submission-packager` can assemble one paper Markdown and a `支撑材料/` directory. The packager selects scripts and inputs from the frozen round's `run_summary.json`, results from that round and the freeze, and images referenced by the delivered paper. It preserves code, data formats, module imports, and workspace-relative paths. It updates image paths only in the packaged paper.
+
+Each final audit must record an explicit `Verdict: PASSED`. The human reviews the dry-run inclusion list and confirms its plan digest before copying. Early packaging requires a human `packaging_waiver` decision with a rationale. The packaging manifest stays at `planning/submission_packaging_manifest.json`, outside the package. Runtime checks are reported as `PASS`, `FAIL`, or `UNVERIFIED`; a syntax check alone never establishes runnable output.
+
 # Change Impact and Auditing
 
 Classify a change before auditing:

@@ -11,7 +11,7 @@
       "name": "mathmodeling-skills",
       "source": "./plugins/mathmodeling-skills",
       "description": "A gated mathematical-modeling contest workflow with human-owned decisions and submission audits.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Zhijun Zhang"
       },
