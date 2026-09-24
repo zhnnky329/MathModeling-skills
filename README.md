@@ -186,6 +186,14 @@ git pull
 
 Claude refreshes the registered marketplace and updates the installed plugin. Codex reinstalls from the current marketplace package. Start a new session after updating.
 
+If a previously installed Claude plugin still reports `failed to load` with `Duplicate hooks file detected`, remove its cached installation and reinstall it after pulling this fix:
+
+```bash
+claude plugin uninstall mathmodeling-skills@mathmodeling-skills --scope user
+claude plugin install mathmodeling-skills@mathmodeling-skills --scope user
+claude plugin list
+```
+
 ### Native plugin layout
 
 - Claude marketplace: `.claude-plugin/marketplace.json`

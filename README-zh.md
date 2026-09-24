@@ -184,6 +184,14 @@ git pull
 
 Claude 会刷新 marketplace 并更新已安装插件；Codex 会从当前 marketplace 包重新安装。更新后请新开会话。
 
+如果此前安装的 Claude 插件仍因 `Duplicate hooks file detected` 显示 `failed to load`，拉取此修复后卸载缓存副本并重新安装：
+
+```bash
+claude plugin uninstall mathmodeling-skills@mathmodeling-skills --scope user
+claude plugin install mathmodeling-skills@mathmodeling-skills --scope user
+claude plugin list
+```
+
 ### 原生插件结构
 
 - Claude marketplace：`.claude-plugin/marketplace.json`

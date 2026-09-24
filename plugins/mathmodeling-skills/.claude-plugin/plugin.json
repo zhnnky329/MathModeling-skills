@@ -1,6 +1,6 @@
 {
   "name": "mathmodeling-skills",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A gated mathematical-modeling contest workflow with human-owned modeling decisions, reproducible experiments, and submission audits.",
   "author": {
     "name": "Zhijun Zhang",
@@ -16,6 +16,5 @@
     "reproducibility",
     "auditing"
   ],
-  "skills": "./skills/",
-  "hooks": "./hooks/hooks.json"
+  "skills": "./skills/"
 }
