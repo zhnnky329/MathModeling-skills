@@ -17,6 +17,13 @@
   <img alt="Codex" src="https://img.shields.io/badge/Codex-supported-E28E2C">
 </p>
 
+<p align="center"><b>Sponsored by Infistar.cc</b> · <a href="https://www.infistar.cc/register?aff=MATHMODELINGSKIL&amp;ref_source=link"><b>Click to visit</b></a></p>
+<p align="center">
+  <a href="https://www.infistar.cc/register?aff=MATHMODELINGSKIL&amp;ref_source=link">
+    <img src="docs/assets/infistar-sponsor.png" alt="Infistar.cc sponsor banner" width="600"/>
+  </a>
+</p>
+
 ---
 
 > [!NOTE]

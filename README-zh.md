@@ -17,6 +17,13 @@
   <img alt="Codex" src="https://img.shields.io/badge/Codex-supported-E28E2C">
 </p>
 
+<p align="center"><b>赞助支持：Infistar.cc 无限星河</b> · <a href="https://www.infistar.cc/register?aff=MATHMODELINGSKIL&amp;ref_source=link"><b>点击进入</b></a></p>
+<p align="center">
+  <a href="https://www.infistar.cc/register?aff=MATHMODELINGSKIL&amp;ref_source=link">
+    <img src="docs/assets/infistar-sponsor.png" alt="Infistar.cc 无限星河赞助横幅" width="600"/>
+  </a>
+</p>
+
 ---
 
 > [!NOTE]
